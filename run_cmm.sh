@@ -2,7 +2,7 @@
 
 #SBATCH -J niclabs
 #SBATCH -c 12
-#SBATCH -p general
+#SBATCH -p slims*
 #SBATCH --output=exp_server_%A.out
 #SBATCH --mail-user=ivana@niclabs.cl (--mail-user=ivana@niclabs.cl)
 #SBATCH --mail-type=ALL
