@@ -26,12 +26,19 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         network_system = InterdependentGraph()
         path = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(path, "networks")
-        AS_title = os.path.join(path, csv_title_generator("logic", "20", "500", exp, version=1))
-        phys_title = os.path.join(path, csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=version,
-                                                            model=model))
-        interd_title = os.path.join(path,csv_title_generator("dependence",  "20", "500", exp, n_inter, 6,
+
+        logic_dir = os.path.join(path, "logical_networks")
+        AS_title = os.path.join(logic_dir, csv_title_generator("logic", "20", "500", exp, version=1))
+
+        physical_dir = os.path.join(path, "physical_networks","links")
+        phys_title = os.path.join(physical_dir, csv_title_generator("physic", x_coordinate, y_coordinate, exp,
+                                                                    version=version, model=model))
+
+        interlink_dir = os.path.join(path, "interdependencies","full_random")
+        interd_title = os.path.join(interlink_dir, csv_title_generator("dependence",  "20", "500", exp, n_inter, 6,
                                                              version=1))
-        providers_title = os.path.join(path, csv_title_generator("providers",  "20", "500", exp, n_inter,
+        providers_dir = os.path.join(path, "providers")
+        providers_title = os.path.join(providers_dir, csv_title_generator("providers",  "20", "500", exp, n_inter,
                                                                  6, version=1))
 
         node_loc_dir = os.path.join(path, "physical_networks","node_locations")
@@ -49,8 +56,9 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
         if strategy != '':
             path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(path, "networks",strategy, csv_title_generator("candidates", x_coordinate, y_coordinate,
-                                                                              exp, version=version, model=model))
+            path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy,
+                                csv_title_generator("candidates", x_coordinate, y_coordinate, exp,
+                                                    version=version, model=model))
 
             edges_to_add = get_list_of_tuples_from_csv(path)
             network_system.add_edges_to_physical_network(edges_to_add)
@@ -64,9 +72,10 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                                         attack_type="physical", version=version, model=model)
 
             path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(path, "test_results", sub_dir, physical_attack_title)
+            path = os.path.join(path, "test_results", sub_dir,"physical_random_attacks", physical_attack_title)
 
             tests_library.single_network_attack(network_system, "physical", path, iter_number, process_name=process_name)
+
         if attack_localized:
             print("localized attack test " + str(datetime.datetime.now()))
             # attack physical network using localized attacks
@@ -155,52 +164,61 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 def add_edges(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers, version, n_logic, n_phys, iter_number,
               model=[], phys_iteration=0, strategy='random,degree,distance,external'):
     path = os.path.dirname(os.path.abspath(__file__))
-    print("Creando arcos")
+
     add_random = 'random' in strategy
     add_degree = 'degree' in strategy
     add_distance = 'distance' in strategy
     add_external = 'external' in strategy
     # Read current edges
-    title = os.path.join(path,"networks",csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=phys_iteration, model=model))
-    phys_graph = set_graph_from_csv(title)
+    physical_graph_dir = os.path.join(path, "networks", "physical_networks", "links",
+                         csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=version,
+                                             model=model))
+    print("Making new edges for: {}".format(csv_title_generator("physic", x_coordinate, y_coordinate, exp,
+                                                                version=version,  model=model)))
+    phys_graph = set_graph_from_csv(physical_graph_dir)
 
     # Read coordinates
-    print(version)
-    coord_title = os.path.join(path,"networks", csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version))
-    print("Leyendo nodos")
-    x_coord, y_coord = get_list_of_coordinates_from_csv(coord_title)
-    print("Lei nodos")
+
+    coord_dir = os.path.join(path, "networks", "physical_networks", "node_locations",
+                             csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version))
+
+    print("Getting nodes locations")
+
+    #x_coord, y_coord = get_list_of_coordinates_from_csv(coord_dir)
+    coord_dict = get_list_of_coordinates_from_csv(coord_dir)
+
+    print("... done.")
 
     number_of_edges_to_add = 640
-    
+
+    print("Calculating new edges")
     if add_random:
         new_edges = network_generators.generate_edges_to_add_random(number_of_edges_to_add, phys_graph)
-        network_generators.save_edges_to_csv(new_edges, x_coordinate, y_coordinate, exp, version=phys_iteration, model=model,
-                                             strategy="random")
+        strategy = "random"
     
     if add_degree:
         percentage = 97
         new_edges = network_generators.generate_edges_to_add_degree(phys_graph, percentage, number_of_edges_to_add)
-        network_generators.save_edges_to_csv(new_edges, x_coordinate, y_coordinate, exp, version=phys_iteration, model=model,
-                                             strategy="degree")
+        strategy = "degree"
 
     if add_distance:
         percentage = 97
-        new_edges = network_generators.generate_edges_to_add_distance(phys_graph, x_coord, y_coord, percentage,
+        new_edges = network_generators.generate_edges_to_add_distance(phys_graph, coord_dict, percentage,
                                                                       number_of_edges_to_add)
-        network_generators.save_edges_to_csv(new_edges, x_coordinate, y_coordinate, exp, version=phys_iteration, model=model,
-                                             strategy="distance")
+        strategy = "distance"
 
     if add_external:
         dependence_tittle = "networks/" + csv_title_generator("dependence", x_coordinate, y_coordinate, exp, n_inter, 6,
                                                               version=version)
         dep_graph = set_graph_from_csv(dependence_tittle)
         percentage = 10 #TODO
-        new_edges = network_generators.genererate_edges_by_degree(phys_graph, x_coord, y_coord, percentage,
+        new_edges = network_generators.genererate_edges_by_degree(phys_graph, coord_dict, percentage,
                                                                   number_of_edges_to_add, external=True,
                                                                   dependence_graph=dep_graph)
-        network_generators.save_edges_to_csv(new_edges, x_coordinate, y_coordinate, exp, version=phys_iteration, model=model,
-                                             strategy="external")
+        strategy = "external"
+
+    network_generators.save_edges_to_csv(new_edges, x_coordinate, y_coordinate, exp, version=version,
+                                             model=model, strategy=strategy)
     print("Arcos creados")
 
 

@@ -49,7 +49,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
     
     print("Staring to write results " + str(datetime.datetime.now()))
 
-    with open(file_name,'w') as csvfile:
+    with open(file_name, 'w') as csvfile:
         print(" -> Writing results on: {}".format(file_name))
         fieldnames = ["1-p", "mean", "std"]
         writer = csv.DictWriter(csvfile,fieldnames=fieldnames)
@@ -164,10 +164,15 @@ def localized_attack(iterations, interdependent_network, x_coordinate,
                                     y_center=position["y"], radius=r))
     file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep,
                                     attack_type="localized", version=version, model=model)
+
     path = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(path, "test_results")
     if strategy != '':
         path = os.path.join(path, strategy)
+    else:
+        path = os.path.join(path, "simple_graphs")
+    path = os.path.join(path, "localized_attacks")
+
     save_as_csv(path, file_name, contents)
 
 

@@ -11,14 +11,16 @@ def run_forever_from_server(server_name, number_of_workers, machine_name):
     all_times = []
     while True:
         start_time = time.time()
+        print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
         no_more_jobs = cr.run_batch_from_server(server_name, number_of_workers, machine_name)
+        print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
         finish_time = time.time()
         total_time = finish_time-start_time
         all_times.append(total_time)
         print("[BATCH TIME] Current total time {}".format(parse_seconds_to_time(total_time)))
         print("[BATCH TIME] Current average time {}".format(parse_seconds_to_time(numpy.mean(all_times))))
         if no_more_jobs:
-            print("[NO MORE JOBS] - Batches done {}".format(len(all_times)))
+            print("[NO MORE JOBS] - Batches done {}".format(len(all_times)-1))
             print("[AVERAGE TIME] {}".format(parse_seconds_to_time(numpy.mean(all_times))))
             break
 

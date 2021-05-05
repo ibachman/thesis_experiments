@@ -19,6 +19,11 @@ def worker_run(worker_queue):
             break
         print('borking - ' + str(multiprocessing.current_process().name))
         process_name = str(multiprocessing.current_process().name)
+        # avisar que job_start (task["job_id"])
+        if task["job_id"] > -1:
+            task["server_connection"].set_job_doing(task["job_id"])
+            print("[STARTING] worker {} starting Job {} ".format(multiprocessing.current_process().name, task["job_id"]))
+
         if task['args.createnetworks']:
             cpn.create_physical_network(task['model'], v=task['version'])
         elif task['make_edges']:
@@ -166,7 +171,7 @@ def run_batch_from_server(server_name, n_workers, machine_name):
     server_connection = cm.ConnectionManager(server_name)
     if machine_name:
         server_connection.set_machine_name(machine_name)
-    lines = server_connection.get_jobs_from_server(n_workers)
+    lines = server_connection.get_all_jobs_from_server("PENDING")
     n_lines = len(lines)
     if n_lines > 0:
         if n_lines < n_workers:

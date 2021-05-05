@@ -2,7 +2,7 @@ import random
 import math
 import numpy as np
 from interdependent_network_library import *
-import sys
+import datetime
 __author__ = 'ivana'
 
 
@@ -134,32 +134,42 @@ def generate_coordinates(n, x_axis=1000, y_axis=1000):
 
 
 def generate_edges_to_add_random(number_of_edges_to_add, graph):
-    physical_edges = graph.get_edgelist()
-    physical_node_amount = len(graph.vs())
-    new_edges_candidates = []
-    for i in range(physical_node_amount):
-        for j in range(i+1, physical_node_amount):
-            if (i, j) not in physical_edges:
-                new_edges_candidates.append((i, j))
-    index_list = random.sample(range(len(new_edges_candidates)-1), number_of_edges_to_add)
+
+    graph_complement = graph.complementer()
+    edge_id_list_remove = []
+    for i in range(len(graph.vs)):
+        id = graph_complement.get_eid(i, i)
+        edge_id_list_remove.append(id)
+    graph_complement.delete_edges(edge_id_list_remove)
+    new_edges_candidates = graph_complement.get_edgelist()
+    index_list = random.sample(range(len(new_edges_candidates) - 1), number_of_edges_to_add)
+
     final_edge_list = []
     for k in index_list:
-        final_edge_list.append(new_edges_candidates[k])
+        i = new_edges_candidates[k][0]
+        j = new_edges_candidates[k][1]
+        i_name = graph.vs['name'][i]
+        j_name = graph.vs['name'][j]
+        final_edge_list.append((i_name, j_name))
     return final_edge_list
 
 
-def generate_edges_to_add_distance(phys_graph, x_coord, y_coord, percentage, n, external=False, dependence_graph=None):
+def generate_edges_to_add_distance(phys_graph, coord_dict, percentage, n, external=False, dependence_graph=None):
     """
     x_coord: List of x coordinates
     y_coord: List of y coordinates
     percentage: Percentage of nodes with minimum degree to iterate
     n: Number of edges to add
     """
+    x = 0
+    y = 1
+
     new_edges = []  
     v = phys_graph.vcount()
     number_of_nodes_to_iterate = int(v * percentage / 100)
     number_of_added_edges = 0
     ranking = []
+
     if external:
         print("external")
         # Make ranking by external degree
@@ -175,26 +185,30 @@ def generate_edges_to_add_distance(phys_graph, x_coord, y_coord, percentage, n, 
         for node in phys_graph.vs:
             if node.index not in ranking:
                 ranking.append(node.index)
+
     while number_of_added_edges < n:
         if external:
             sorted_nodes = ranking
         else:
             degrees = phys_graph.degree()
+            phys_graph.vs["degree"] = degrees
             sorted_nodes = np.flip(np.argsort(degrees), axis=0)
-        
+
         for i in reversed(range(v - number_of_nodes_to_iterate, v)):
-            small_degree_node = sorted_nodes[i]
+            small_degree_node = phys_graph.vs[sorted_nodes[i]]['name']
             target = float("inf")
             distance = float("inf")
+
             for j in range(v - number_of_nodes_to_iterate):
-                candidate = sorted_nodes[j]
-                x1 = x_coord[small_degree_node]
-                y1 = y_coord[small_degree_node]
-                x2 = x_coord[candidate]
-                y2 = y_coord[candidate]
+                candidate = phys_graph.vs[sorted_nodes[j]]['name']
+                x1 = coord_dict[small_degree_node][x]#x_coord[small_degree_node]
+                y1 = coord_dict[small_degree_node][y]#y_coord[small_degree_node]
+                x2 = coord_dict[candidate][x]
+                y2 = coord_dict[candidate][y]
 
                 cand_distance = math.sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
-                if small_degree_node != candidate and cand_distance < distance  and \
+
+                if small_degree_node != candidate and cand_distance < distance and \
                         not phys_graph.are_connected(small_degree_node, candidate):
                     target = candidate
                     distance = cand_distance
@@ -226,30 +240,36 @@ def generate_edges_to_add_degree(phys_graph, percentage, number_of_edges_to_add)
                 target = sorted_nodes[j]
 
                 if small_degree_node != target and not phys_graph.are_connected(small_degree_node, target):
-                    new_edges.append((small_degree_node, target))
+                    names = phys_graph.vs['name']
+                    new_edges.append((names[small_degree_node], names[target]))
                     phys_graph.add_edge(small_degree_node, target)
                     number_of_added_edges += 1
-           
                     if number_of_added_edges >= number_of_edges_to_add :
-                        return new_edges 
+                        return new_edges
+
     return new_edges
 
 
 def save_edges_to_csv(edge_list, x_coordinates, y_coordinates, pg_exponent, n_dependence="", l_providers="",
                        version="", model="", strategy=""):
-    title = csv_title_generator("candidates",x_coordinates,y_coordinates,pg_exponent,n_dependence,l_providers,attack_type="",version=version, model=model)
+    title = csv_title_generator("candidates", x_coordinates, y_coordinates, pg_exponent, n_dependence,
+                                l_providers, attack_type="", version=version, model=model)
+
     path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(path, "networks", "physical_networks", "extra_edges")
+
     if "random" in strategy:
-        full_directory = os.path.join(path,"networks","random",title)
+        full_directory = os.path.join(path, "random", title)
     elif "distance" in strategy:
-        full_directory = os.path.join(path,"networks","distance",title)
+        full_directory = os.path.join(path, "distance", title)
     elif "external" in strategy:
-        full_directory = os.path.join(path,"networks","external",title)
+        full_directory = os.path.join(path, "external", title)
     elif "degree" in strategy:
-        full_directory = os.path.join(path,"networks","degree",title)
+        full_directory = os.path.join(path, "degree", title)
     else:
-        full_directory = os.path.join(path,"networks",title)
-    
+        full_directory = os.path.join(path, title)
+
+    print("Saving new edges in: {}".format(full_directory))
     with open(full_directory, 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
         for i in range(len(edge_list)):

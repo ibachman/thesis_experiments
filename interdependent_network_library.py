@@ -68,8 +68,6 @@ def set_graph_from_csv(csv_file, graph=None):
         graph = igraph.Graph(len(nodes_names))
         graph.vs['name'] = nodes_names
 
-        print(csv_file)
-
     with open(csv_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar=',')
         for row in reader:
@@ -95,8 +93,8 @@ def get_list_of_tuples_from_csv(csv_file):
     with open(csv_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar=',')
         for row in reader:
-            first = int(row[0])
-            second = int(row[1])
+            first = row[0]
+            second = row[1]
             list_of_tuples.append((first, second))
     return list_of_tuples
 

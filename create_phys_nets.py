@@ -2,6 +2,7 @@ from interdependent_network_library import *
 import network_generators as network_generators
 import igraph
 import datetime
+import connection_manager as cm
 
 
 def create_coordinates():
@@ -105,7 +106,47 @@ def set_graph_from_csv(csv_file, graph=None):
             graph.add_edge(first, second)
     return graph
 
+def net_and_extra_links(model, version, strategy):
+    x_coordinate = 20
+    y_coordinate = 500
+    exp = 2.5
+    n_inter = 3
+    network_system = InterdependentGraph()
+    path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(path, "networks")
 
+    logic_dir = os.path.join(path, "logical_networks")
+    AS_title = os.path.join(logic_dir, csv_title_generator("logic", "20", "500", exp, version=1))
+
+    physical_dir = os.path.join(path, "physical_networks", "links")
+    phys_title = os.path.join(physical_dir, csv_title_generator("physic", x_coordinate, y_coordinate, exp,
+                                                                version=version, model=model))
+
+    interlink_dir = os.path.join(path, "interdependencies", "full_random")
+    interd_title = os.path.join(interlink_dir, csv_title_generator("dependence", "20", "500", exp, n_inter, 6,
+                                                                   version=1))
+    providers_dir = os.path.join(path, "providers")
+    providers_title = os.path.join(providers_dir, csv_title_generator("providers", "20", "500", exp, n_inter,
+                                                                      6, version=1))
+
+    node_loc_dir = os.path.join(path, "physical_networks", "node_locations")
+    nodes_title = os.path.join(node_loc_dir,
+                               csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version))
+
+    network_system.create_from_csv(AS_title, phys_title, interd_title, nodes_title, providers_csv=providers_title)
+    pgraph = network_system.get_phys()
+    print(len(pgraph.get_edgelist()))
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy,
+                        csv_title_generator("candidates", x_coordinate, y_coordinate, exp,
+                                            version=version, model=model))
+
+    edges_to_add = get_list_of_tuples_from_csv(path)
+    network_system.add_edges_to_physical_network(edges_to_add)
+    pgraph = network_system.get_phys()
+    print(len(pgraph.get_edgelist()))
+    print(" -> Added edges from: {}".format(path))
 
 #create_physical_network("RNG", v=3)
 #create_physical_network("GG")
