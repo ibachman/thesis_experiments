@@ -39,11 +39,12 @@ def single_physical_network(model, space, version):
     network_system = InterdependentGraph()
     network_system.set_physical(phys_graph)
     # Save physical
+    return phys_graph
     network_system.save_physical(x_coordinate, y_coordinate, exp, version=version, model=model)
 
 
-def create_physical_network(model, v=None):
-    space_shapes = [[20, 500], [100, 100]]
+def create_physical_network(model, v=None, space_shapes=[[20, 500], [100, 100]]):
+
     for s in space_shapes:
         if s == space_shapes[0] and model == "RNG" and v in [1, 2, 3, 4]:
             continue
@@ -106,7 +107,7 @@ def set_graph_from_csv(csv_file, graph=None):
             graph.add_edge(first, second)
     return graph
 
-def net_and_extra_links(model, version, strategy):
+def net_and_extra_links(model, version, strategy=None):
     x_coordinate = 20
     y_coordinate = 500
     exp = 2.5
@@ -137,16 +138,107 @@ def net_and_extra_links(model, version, strategy):
     pgraph = network_system.get_phys()
     print(len(pgraph.get_edgelist()))
 
+    if strategy:
+        path = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy,
+                            csv_title_generator("candidates", x_coordinate, y_coordinate, exp,
+                                                version=version, model=model))
+
+        edges_to_add = get_list_of_tuples_from_csv(path)
+        network_system.add_edges_to_physical_network(edges_to_add)
+        pgraph = network_system.get_phys()
+        print(len(pgraph.get_edgelist()))
+        print(" -> Added edges from: {}".format(path))
+
+
+def check_allocations():
+    x = 0
+    y = 1
+    space_shapes = [[20, 500], [100, 100]]
+    n_phys = 2000
+    exp = 2.5
+    n_inter = 3
+    n_logic_suppliers = 6
+    for version in range(1, 11):
+        for s in space_shapes:
+            coord_dir = "networks/physical_networks/node_locations/" + \
+                        csv_title_generator("nodes", s[x], s[y], exp, version=version)
+            coord_dict = get_list_of_coordinates_from_csv(coord_dir)
+            aux_dict = {}
+            print_flag = False
+            for node in list(coord_dict.keys()):
+
+                point = (coord_dict[node][x], coord_dict[node][y])
+                if point not in aux_dict.keys():
+                    aux_dict[point] = 1
+                else:
+                    aux_dict[point] += 1
+                    print_flag = True
+            if print_flag:
+                for p in aux_dict.keys():
+                    if aux_dict[p] > 1:
+                        print("Point {} appears {} times in {}".format(p, aux_dict[p], coord_dir))
+            else:
+                print("{} OK".format(coord_dir))
+
+
+def check_edges(model):
+    x = 0
+    y = 1
+    space_shapes = [[20, 500], [100, 100]]
+    n_phys = 2000
+    exp = 2.5
+    n_inter = 3
+    n_logic_suppliers = 6
     path = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy,
-                        csv_title_generator("candidates", x_coordinate, y_coordinate, exp,
-                                            version=version, model=model))
+    path = os.path.join(path, "networks")
 
-    edges_to_add = get_list_of_tuples_from_csv(path)
-    network_system.add_edges_to_physical_network(edges_to_add)
-    pgraph = network_system.get_phys()
-    print(len(pgraph.get_edgelist()))
-    print(" -> Added edges from: {}".format(path))
+    not_ok_flag= False
+    for version in range(1, 11):
+        for s in space_shapes:
+            physical_dir = os.path.join(path, "physical_networks", "links")
+            phys_title = os.path.join(physical_dir, csv_title_generator("physic", s[x], s[y], exp,
+                                                                        version=version, model=model))
 
-#create_physical_network("RNG", v=3)
-#create_physical_network("GG")
+
+            print("opening {}".format(phys_title))
+            pg = single_physical_network(model, s, version)
+            elist = pg.get_edgelist()
+
+
+            aux_dict = {}
+            print_flag = False
+            with open(phys_title, 'r') as csvfile:
+                reader = csv.reader(csvfile, delimiter=',', quotechar=',')
+                for row in reader:
+                    first = row[0]
+                    second = row[1]
+                    edge = (first, second)
+
+                    edge_aux = (int(first.replace("p", "")), int(second.replace("p", "")))
+                    if edge_aux not in elist and (second, first) not in elist:
+                        print(edge)
+                        not_ok_flag = True
+
+                    if edge not in aux_dict.keys() and (second, first) not in aux_dict.keys():
+                        aux_dict[edge] = 1
+                    else:
+                        aux_dict[edge] += 1
+                        print_flag = True
+                if print_flag:
+                    for p in aux_dict.keys():
+                        if aux_dict[p] > 1:
+                            print("Edge {} appears {} times in {}".format(p, aux_dict[p], phys_title))
+                #else:
+                #    print("{} OK".format(phys_title))
+                if len(elist) != len(list(aux_dict.keys())):
+                    print("{} vs {}".format(len(elist), len(list(aux_dict.keys()))))
+                    not_ok_flag = True
+    if not_ok_flag:
+        print("Model {} has problems".format(model))
+
+
+#create_physical_network("RNG", v=5, space_shapes=[[20, 500]])
+check_edges("RNG")
+check_edges("GG")
+check_edges("5NN")

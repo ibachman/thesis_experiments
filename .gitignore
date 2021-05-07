@@ -1,3 +1,6 @@
 *.pyc
 *.out
 *.xml
+data_proc/
+run_local.txt
+.gitignore

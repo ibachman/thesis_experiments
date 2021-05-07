@@ -7,7 +7,8 @@ __author__ = 'ivana'
 
 
 def generate_physical_network(n, model, coord_dict):
-
+    x = 0
+    y = 1
     # establish neighbourhoods
     node_connections = []
     if model == "RNG":
@@ -16,67 +17,57 @@ def generate_physical_network(n, model, coord_dict):
             for j in range(i+1, n):
                 # node i data
                 node_i_name = "p{}".format(i)
-                node_i_x = coord_dict[node_i_name][0]
-                node_i_y = coord_dict[node_i_name][1]
+                loc_node_i = (coord_dict[node_i_name][x], coord_dict[node_i_name][y])
+
                 # node j data
                 node_j_name = "p{}".format(j)
-                node_j_x = coord_dict[node_j_name][0]
-                node_j_y = coord_dict[node_j_name][1]
+                loc_node_j = (coord_dict[node_j_name][x], coord_dict[node_j_name][y])
 
-                nodes_distance = distance(node_i_x, node_i_y, node_j_x, node_j_y)
+                nodes_distance = get_distance(loc_node_i, loc_node_j)
                 can_connect = True
-                if nodes_distance is not 0:
+                if nodes_distance > 0:
                     for k in range(n):
                         if k is not i and k is not j:
                             # node k data
                             node_k_name = "p{}".format(k)
-                            node_k_x = coord_dict[node_k_name][0]
-                            node_k_y = coord_dict[node_k_name][1]
+                            loc_node_k = (coord_dict[node_k_name][x], coord_dict[node_k_name][y])
 
-                            i_k_distance = distance(node_i_x, node_i_y, node_k_x,
-                                                    node_k_y)
-                            j_k_distance = distance(node_k_x, node_k_y, node_j_x,
-                                                    node_j_y)
+                            i_k_distance = get_distance(loc_node_i, loc_node_k)
+                            j_k_distance = get_distance(loc_node_k, loc_node_j)
+
                             if i_k_distance < nodes_distance and j_k_distance < nodes_distance:
                                 can_connect = False
+                                break
                 if can_connect:
                     node_connections.append((node_i_name, node_j_name))
-
 
     elif model == "GG":
         for i in range(n):
             for j in range(i + 1, n):
                 # node i data
                 node_i_name = "p{}".format(i)
-                node_i_x = coord_dict[node_i_name][0]
-                node_i_y = coord_dict[node_i_name][1]
+                loc_node_i = (coord_dict[node_i_name][x], coord_dict[node_i_name][y])
+
                 # node j data
                 node_j_name = "p{}".format(j)
-                node_j_x = coord_dict[node_j_name][0]
-                node_j_y = coord_dict[node_j_name][1]
+                loc_node_j = (coord_dict[node_j_name][x], coord_dict[node_j_name][y])
 
-                center_x = (node_i_x +node_j_x) / 2
-                center_y = (node_i_y + node_j_y) / 2
-                distance_from_center = distance(center_x, center_y, node_j_x, node_j_y)
-                diameter = distance(node_i_x, node_i_y, node_j_x, node_j_y)
+                center = ((loc_node_i[x] + loc_node_j[x]) / 2, (loc_node_i[y] + loc_node_j[y]) / 2)
+
+                radius = get_distance(loc_node_i, loc_node_j)/2
                 can_connect = True
-                if distance_from_center == 0:
-                    pass
-                    #print "distancia es cero entre", i, j
-                if distance_from_center is not 0:
-                    min_center_k_distance = 10000000000000
-                    for k in range(n):
-                        if k is not i and k is not j:
-                            # node k data
-                            node_k_name = "p{}".format(k)
-                            node_k_x = coord_dict[node_k_name][0]
-                            node_k_y = coord_dict[node_k_name][1]
-                            diameter_1 = distance(node_i_x, node_i_y, node_k_x,
-                                                  node_k_y)
-                            diameter_2 = distance(node_j_x, node_j_y, node_k_x,
-                                                  node_k_y)
-                            if math.pow(diameter_1, 2) + math.pow(diameter_2, 2) < math.pow(diameter, 2):
-                                can_connect = False
+
+                # check if there is a node in the circular area defined by 'center' and 'radius'
+                for k in range(n):
+                    if k != i and k != j:
+                        # node k data
+                        node_k_name = "p{}".format(k)
+                        loc_node_k = (coord_dict[node_k_name][x], coord_dict[node_k_name][y])
+
+                        if get_distance(center, loc_node_k) < radius:
+                            can_connect = False
+                            break
+
                 if can_connect:
                     node_connections.append((node_i_name, node_j_name))
 
@@ -84,17 +75,15 @@ def generate_physical_network(n, model, coord_dict):
         for i in range(n):
             # node i data
             node_i_name = "p{}".format(i)
-            node_i_x = coord_dict[node_i_name][0]
-            node_i_y = coord_dict[node_i_name][1]
+            loc_node_i = (coord_dict[node_i_name][x], coord_dict[node_i_name][y])
 
             closest_to_i = []
             for j in range(n):
                 # node j data
                 node_j_name = "p{}".format(j)
-                node_j_x = coord_dict[node_j_name][0]
-                node_j_y = coord_dict[node_j_name][1]
+                loc_node_j = (coord_dict[node_j_name][x], coord_dict[node_j_name][y])
 
-                closest_to_i.append((distance(node_i_x, node_i_y, node_j_x, node_j_y), j))
+                closest_to_i.append((get_distance(loc_node_i, loc_node_j), j))
 
             closest_to_i.sort(key=lambda tup: tup[0])
             for w in range(1, 5):
@@ -104,6 +93,45 @@ def generate_physical_network(n, model, coord_dict):
                 i = k
                 if ("p{}".format(i), "p{}".format(j)) not in node_connections:
                     node_connections.append(("p{}".format(i), "p{}".format(j)))
+
+    elif model == "YAO":
+        for i in range(n):
+            # node i data
+            node_i_name = "p{}".format(i)
+            loc_node_i = (coord_dict[node_i_name][x], coord_dict[node_i_name][y])
+
+            area_buckets = {(0, 60): {'distance': np.infty, 'closest_node': -1},
+                            (60, 120): {'distance': np.infty, 'closest_node': -1},
+                            (120, 180): {'distance': np.infty, 'closest_node': -1},
+                            (0, -60): {'distance': np.infty, 'closest_node': -1},
+                            (-60, -120): {'distance': np.infty, 'closest_node': -1},
+                            (-120, -180): {'distance': np.infty, 'closest_node': -1}}
+
+            for j in range(i + 1, n):
+                # node j data
+                node_j_name = "p{}".format(j)
+                loc_node_j = (coord_dict[node_j_name][x], coord_dict[node_j_name][y])
+
+                distance = get_distance(loc_node_i, loc_node_j)
+                angle = get_angle(loc_node_i, loc_node_j)
+                for area in area_buckets.keys():
+                    if area[0] == 0 and area[1] == 60:
+                        if area[0] <= angle <= area[1]:
+                            if distance < area_buckets[area]['distance']:
+                                area_buckets[area]['distance'] = distance
+                                area_buckets[area]['closest_node'] = node_j_name
+                            break
+                    else:
+                        if area[0] < angle <= area[1]:
+                            if distance < area_buckets[area]['distance']:
+                                area_buckets[area]['distance'] = distance
+                                area_buckets[area]['closest_node'] = node_j_name
+                            break
+
+            for area in area_buckets.keys():
+                candidate_node = area_buckets[area]['closest_node']
+                if candidate_node != -1:
+                    node_connections.append((node_i_name, candidate_node))
     else:
         print("ERROR")
 
@@ -409,10 +437,23 @@ def weighted_choice(choices):
     assert False, "Shouldn't get here"
 
 
-def distance(x1, y1, x2, y2):
+def get_distance(point_1, point_2):
+    x = 0
+    y = 1
+    x1 = point_1[x]
+    x2 = point_2[x]
+    y1 = point_1[y]
+    y2 = point_2[y]
     return math.sqrt(math.pow(x1-x2, 2) + math.pow(y1-y2, 2))
 
 
-def angle(x1, y1, x2, y2):
-    m = (y2-y1)/(x2-x1)
-    return math.atan(m)*180/math.pi
+def get_angle(point_1, point_2):
+    x = 0
+    y = 1
+    x1 = point_1[x]
+    x2 = point_2[x]
+    y1 = point_1[y]
+    y2 = point_2[y]
+    oc = (y2-y1)
+    ac = (x2-x1)
+    return math.atan2(oc, ac)*180/math.pi
