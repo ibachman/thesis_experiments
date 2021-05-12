@@ -20,7 +20,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interd()
+    interlink_graph = interdependent_network.get_interd()
 
     if not network_to_attack == "logic" and not network_to_attack == "physical":
         print("Choose a valid network to attack")
@@ -38,10 +38,11 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
     for j in range(1, n_phys + n_logic):
         iteration_results.append([])
     for j in range(iter_number):
-        print(" ----------[[" + str(datetime.datetime.now())+ "]]--" + process_name + " -- iteration: " + str(j+1))
+        print(" -------> [[{}]] -- {} -- iteration: {}".format(datetime.datetime.now(), process_name, (j+1)))
         for i in range(1, iteration_range):
             graph_copy = InterdependentGraph()
-            graph_copy.create_from_graph(logic_network,logic_suppliers,physical_network,phys_suppliers,interdep_graph)
+            graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers,
+                                         interlink_graph)
             list_of_nodes_to_attack = random.sample(samp, i)
 
             graph_copy.attack_nodes(list_of_nodes_to_attack)
@@ -142,7 +143,7 @@ def single_localized_attack(interdependent_network, x_coordinate,
 
 def localized_attack(iterations, interdependent_network, x_coordinate,
                      y_coordinate, radius, ndep, providers, version, model, strategy='', center_file=None, centers=None,
-                     max_radius=-1, center_function=None, radius_function=None, exp="2.5", file=None):
+                     max_radius=-1, center_function=None, radius_function=None, exp="2.5", file=None, legacy=False):
 
     if not centers:
         centers = []
@@ -164,6 +165,8 @@ def localized_attack(iterations, interdependent_network, x_coordinate,
                                     y_center=position["y"], radius=r))
     file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep,
                                     attack_type="localized", version=version, model=model)
+    if legacy:
+        file_name = "legacy_{}".format(file_name)
 
     path = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(path, "test_results")
