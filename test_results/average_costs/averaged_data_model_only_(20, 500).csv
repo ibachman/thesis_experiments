@@ -1,0 +1,8 @@
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+model & 4NN & GG & RNG\\ \hline
+mean & 10171.16 & 8275.38 & 4386.83\\ \hline
+std & 120.65 & 78.45 & 42.4\\ \hline
+\end{tabular}
+\end{table}

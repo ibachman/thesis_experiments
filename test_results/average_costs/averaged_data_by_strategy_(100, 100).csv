@@ -1,0 +1,9 @@
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+strategy/model & 4NN & GG & RNG\\ \hline
+random & 106403.24 (3606.88) & 106756.52 (2630.12) & 106499.03 (2910.96)\\ \hline
+degree & 113362.64 (10789.09) & 110742.67 (9430.69) & 108827.52 (7620.91)\\ \hline
+distance & 108849.61 (4810.78) & 107164.54 (3965.26) & 107419.93 (4889.07)\\ \hline
+\end{tabular}
+\end{table}
