@@ -12,7 +12,7 @@ from interdependent_network_library import *
 def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
-             seismic_data=[]):
+             seismic_data=[], legacy=False):
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -28,30 +28,39 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         path = os.path.join(path, "networks")
 
         logic_dir = os.path.join(path, "logical_networks")
-        AS_title = os.path.join(logic_dir, csv_title_generator("logic", "20", "500", exp, version=1))
-
-        physical_dir = os.path.join(path, "physical_networks","links")
-        phys_title = os.path.join(physical_dir, csv_title_generator("physic", x_coordinate, y_coordinate, exp,
-                                                                    version=version, model=model))
-
-        interlink_dir = os.path.join(path, "interdependencies","full_random")
-        interd_title = os.path.join(interlink_dir, csv_title_generator("dependence",  "20", "500", exp, n_inter, 6,
-                                                             version=1))
+        physical_dir = os.path.join(path, "physical_networks", "links")
+        interlink_dir = os.path.join(path, "interdependencies", "full_random")
         providers_dir = os.path.join(path, "providers")
-        providers_title = os.path.join(providers_dir, csv_title_generator("providers",  "20", "500", exp, n_inter,
-                                                                 6, version=1))
+        node_loc_dir = os.path.join(path, "physical_networks", "node_locations")
 
-        node_loc_dir = os.path.join(path, "physical_networks","node_locations")
-        nodes_title = os.path.join(node_loc_dir,csv_title_generator("nodes",x_coordinate,y_coordinate,exp,version=version))
+        if legacy:
+            logic_title = "legacy_{}".format(csv_title_generator("logic", "20", "500", exp, version=1))
+            interlink_title = "legacy_{}".format(csv_title_generator("dependence",  "20", "500", exp, n_inter, 6,
+                                                                     version=1))
+            providers_title = "legacy_{}".format(csv_title_generator("providers",  "20", "500", exp, n_inter, 6,
+                                                                     version=1))
+        else:
+            logic_title = csv_title_generator("logic", "20", "500", exp, version=1)
+            interlink_title = csv_title_generator("dependence",  "20", "500", exp, n_inter, 6, version=1)
+            providers_title = csv_title_generator("providers",  "20", "500", exp, n_inter, 6, version=1)
 
-        network_system.create_from_csv(AS_title, phys_title, interd_title, nodes_title, providers_csv=providers_title)
+        nodes_loc_title = csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
+        physic_title = csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=version, model=model)
+        logic_dir = os.path.join(logic_dir, logic_title)
+        physical_dir = os.path.join(physical_dir, physic_title)
+        interlink_dir = os.path.join(interlink_dir, interlink_title)
+        providers_dir = os.path.join(providers_dir, providers_title)
+        nodes_loc_dir = os.path.join(node_loc_dir, nodes_loc_title)
+
+        network_system.create_from_csv(logic_dir, physical_dir, interlink_dir, nodes_loc_dir,
+                                       providers_csv=providers_dir)
 
         print("System created {} from:".format(datetime.datetime.now()))
-        print(" -> Logical network: {}".format(AS_title))
-        print(" -> Inter-links: {}".format(interd_title))
-        print(" -> Providers: {}".format(providers_title))
-        print(" -> Physical network: {}".format(phys_title))
-        print(" -> Node allocation: {}".format(nodes_title))
+        print(" -> Logical network: {}".format(logic_dir))
+        print(" -> Inter-links: {}".format(interlink_dir))
+        print(" -> Providers: {}".format(providers_dir))
+        print(" -> Physical network: {}".format(physical_dir))
+        print(" -> Node allocation: {}".format(nodes_loc_dir))
         sub_dir = 'simple_graphs'
 
         if strategy != '':
@@ -66,32 +75,33 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             sub_dir = strategy
 
         if attack_phys:
-            print("physical test attack " + str(datetime.datetime.now()))
+            print("physical test attack {}".format(datetime.datetime.now()))
             # attack only physical network
             physical_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter,
-                                        attack_type="physical", version=version, model=model)
-
+                                                        attack_type="physical", version=version, model=model)
+            if legacy:
+                physical_attack_title = "legacy_{}".format(physical_attack_title)
             path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(path, "test_results", sub_dir,"physical_random_attacks", physical_attack_title)
+            path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
 
             tests_library.single_network_attack(network_system, "physical", path, iter_number, process_name=process_name)
 
         if attack_localized:
-            print("localized attack test " + str(datetime.datetime.now()))
+            print("localized attack test {}".format(datetime.datetime.now()))
             # attack physical network using localized attacks
             radius = localized_attack_data["radius"]
             tests_library.localized_attack(iter_number, network_system, x_coordinate, y_coordinate, radius, n_inter,
-                                           n_logic_suppliers, version, model, strategy=strategy)
-            print("localized attack test " + str(datetime.datetime.now()))
+                                           n_logic_suppliers, version, model, strategy=strategy, legacy=legacy)
+            print("localized attack test {}".format(datetime.datetime.now()))
         #
         if attack_seismic:
-            print("seismic attack test " + str(datetime.datetime.now()))
+            print("seismic attack test {}".format(datetime.datetime.now()))
             # aca la idea es poner una función que lea datos sísmicos de un archivo y llamé a la otra función que hace
             # en serio el ataque
             seismic_data_file = seismic_data["file"]
             tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model,
                                           seismic_data_file)
-            print("seismic attack test " + str(datetime.datetime.now()))
+            print("seismic attack test {}".format(datetime.datetime.now()))
 
         else:
             pass
@@ -101,7 +111,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         as_graph = network_generators.generate_logic_network(n_logic, exponent=exp)
         network_system = InterdependentGraph()
         network_system.set_AS(as_graph)
-        network_system.save_logic(x_coordinate, y_coordinate, exp, n_inter, version=version)
+        network_system.save_logic(x_coordinate, y_coordinate, exp, version=version)
 
         print("amount of connected components " + str(len(as_graph.clusters())))
         print("AS ready " + str(datetime.datetime.now()))
@@ -128,36 +138,37 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
     else:
 
-        print("start " + str(datetime.datetime.now()))
+        print("start {}".format(datetime.datetime.now()))
 
         phys_id_list = []
         for i in range(n_phys):
-            phys_id_list.append('p'+str(i))
+            phys_id_list.append('p{}'.format(i))
 
         logic_id_list = []
         for i in range(n_logic):
-            logic_id_list.append('l'+str(i))
+            logic_id_list.append('l{}'.format(i))
 
-        interdep_graph = network_generators.set_interdependencies(phys_id_list, logic_id_list, n_inter)
+        as_suppliers = network_generators.set_logic_suppliers(logic_id_list, n_logic_suppliers)
 
-        print("interdep ready "+ str(datetime.datetime.now()))
+        print("AS suppliers ready {}".format(datetime.datetime.now()))
 
-        as_suppliers = network_generators.set_logic_suppliers(logic_id_list, n_logic_suppliers, n_inter, interdep_graph)
+        interdep_graph = network_generators.set_interdependencies(phys_id_list, logic_id_list, n_inter, as_suppliers)
 
-        print("AS suppliers ready "+ str(datetime.datetime.now()))
+        print("interdep ready {}".format(datetime.datetime.now()))
 
         phys_suppliers = network_generators.set_physical_suppliers(interdep_graph, as_suppliers)
 
-        print("Phys suppliers ready "+ str(datetime.datetime.now()))
+        print("Phys suppliers ready {}".format(datetime.datetime.now()))
 
         network_system = InterdependentGraph()
-        network_system.create_from_empty_logic_physical(logic_id_list,as_suppliers,phys_id_list,phys_suppliers,interdep_graph)
+        network_system.create_from_empty_logic_physical(logic_id_list, as_suppliers, phys_id_list, phys_suppliers,
+                                                        interdep_graph)
 
-        print("system created "+ str(datetime.datetime.now()))
+        print("system created {}".format(datetime.datetime.now()))
 
-        network_system.save_to_pdf(x_coordinate,y_coordinate,exp,n_inter,version=version)
+        network_system.save_interlinks_and_providers(x_coordinate, y_coordinate, exp, n_inter, version=version)
 
-        print("system saved "+ str(datetime.datetime.now()))
+        print("system saved {}".format(datetime.datetime.now()))
     print("run test done")
 
 

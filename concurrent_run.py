@@ -37,7 +37,8 @@ def worker_run(worker_queue):
                      task['physical'], task['phys_iteration'], task['strategy'],
                      localized_attack_data=task['localized_attacks'],
                      process_name=process_name,
-                     seismic_data=task['seismic_data'])
+                     seismic_data=task['seismic_data'],
+                     legacy=task['legacy'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -87,6 +88,7 @@ def parse_task_args(line):
     task['args.createnetworks'] = args.createnetworks
     task['x_coordinate'] = args.xcoordinate
     task['y_coordinate'] = args.ycoordinate
+    task['legacy'] = args.legacy
     task['exp'] = args.exponentpg
     task['n_inter'] = args.interdependenceamount
     task['n_logic_suppliers'] = args.logicsuppliers
@@ -131,7 +133,6 @@ def parse_task_args(line):
 
     if len(seismic_data) > 0:
         task['attack_type'] = ['seismic']
-
 
     return task
 
@@ -211,6 +212,7 @@ parser.add_argument('-laf', '--localizedattacksfile',  nargs=1, help='Test local
 parser.add_argument('-sf', '--seismicdatafile',type=str, help='Test seismic attacks. Receives filename]')
 
 parser.add_argument('-cn', '--createnetworks', action='store_true', help='Create networks from debug function')
+parser.add_argument('-leg', '--legacy', action='store_true', help='use legacy files')
 
 if __name__ == "__main__":
     line = " ".join(sys.argv[1::])
