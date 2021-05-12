@@ -2,6 +2,7 @@ from interdependent_network_library import *
 import network_generators as network_generators
 import igraph
 import datetime
+import random
 import connection_manager as cm
 
 
@@ -34,20 +35,19 @@ def single_physical_network(model, space, version):
     coord_dict = get_list_of_coordinates_from_csv(coord_dir)
     print("---- getting coordinates from file: {}".format(coord_dir))
     print("---- Generating network {}. Start time: {}".format(model, datetime.datetime.now()))
-    phys_graph = network_generators.generate_physical_network(n_phys, model, coord_dict)
+    phys_graph = network_generators.generate_physical_network(n_phys, model, coord_dict, space=space)
     print("---- Network {} done. Start time: {}".format(model, datetime.datetime.now()))
     network_system = InterdependentGraph()
     network_system.set_physical(phys_graph)
     # Save physical
-    return phys_graph
     network_system.save_physical(x_coordinate, y_coordinate, exp, version=version, model=model)
 
 
-def create_physical_network(model, v=None, space_shapes=[[20, 500], [100, 100]]):
+def create_physical_network(model, v=None, space_shapes=None):
+    if not space_shapes:
+        space_shapes = [[20, 500], [100, 100]]
 
     for s in space_shapes:
-        if s == space_shapes[0] and model == "RNG" and v in [1, 2, 3, 4]:
-            continue
         if v:
             single_physical_network(model, s, v)
         else:
@@ -96,8 +96,6 @@ def set_graph_from_csv(csv_file, graph=None):
         nodes_names = get_different_nodes(csv_file)
         graph = igraph.Graph(len(nodes_names))
         graph.vs['name'] = nodes_names
-
-        print(csv_file)
 
     with open(csv_file, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar=',')
@@ -238,7 +236,15 @@ def check_edges(model):
         print("Model {} has problems".format(model))
 
 
-#create_physical_network("RNG", v=5, space_shapes=[[20, 500]])
-check_edges("RNG")
-check_edges("GG")
-check_edges("5NN")
+physical_network_nodes_ids = ["p{}".format(x) for x in list(range(2000))]
+logic_network_nodes_ids = ["l{}".format(x) for x in list(range(300))]
+max_number_of_interdependencies = 5
+as_suppliers = random.sample(logic_network_nodes_ids, 6)
+#g = network_generators.set_interdependencies(physical_network_nodes_ids, logic_network_nodes_ids, max_number_of_interdependencies,
+#                          as_suppliers, mode="semi random")
+
+#phys_suppliers = network_generators.set_physical_suppliers(g, as_suppliers)
+#print(phys_suppliers)
+
+# tengo que guardar somewhere los "datos viejos" (legacy??) del paper del journal. DESPUES DE ESO puedo ponerme a sacar
+# todas las redes logicas e interdep y arcos extra y ble
