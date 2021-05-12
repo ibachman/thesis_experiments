@@ -17,4 +17,4 @@ mkdir -p test_results/seismic
 
 pip3 install -r requirements.txt
 
-srun python3 -u job_manager.py -f run_legacy_LA.txt -w 20
+srun python3 -u job_manager.py -f run_legacy_RA_ndep_7.txt -w 20
