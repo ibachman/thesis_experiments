@@ -16,21 +16,20 @@ def save_as_csv(path, file_name, content_dict):
             writer.writerow(line)
 
 
-def csv_title_generator(graph_type, x_coordinates, y_coordinates, pg_exponent, n_dependence="", l_providers="",
+def csv_title_generator(graph_type, x_axis_length, y_axis_length, pg_exponent, n_dependence="", l_providers="",
                         attack_type="", version="", model=""):
-    title = str(graph_type) + "_" + str(x_coordinates) + "x" + str(y_coordinates) + "_exp_" + str(
-        pg_exponent)
+    title = str(graph_type) + "_" + str(x_axis_length) + "x" + str(y_axis_length) + "_exp_" + str(pg_exponent)
     
-    if n_dependence is not "":
+    if n_dependence != "":
         title += "_ndep_" + str(n_dependence)
-    if attack_type is not "":
+    if attack_type != "":
         title = title + "_att_" + str(attack_type)
-    if l_providers is not "":
+    if l_providers != "":
         amount_of_logic_providers = str(l_providers)
         title += "_lprovnum_" + str(amount_of_logic_providers)
-    if version is not "":
+    if version != "":
         title = title + "_v" + str(version)
-    if model is not "":
+    if model != "":
         title = title + "_m_" + str(model)
 
     title += ".csv"
@@ -103,7 +102,8 @@ def save_nodes_to_csv(x_positions, y_positions, x_coordinates, y_coordinates, pg
                       attack_type="", version="", model=""):
     title = csv_title_generator("nodes", x_coordinates, y_coordinates, pg_exponent,
                                 attack_type="", version=version, model=model)
-    full_directory = "networks/physical_networks/node_locations/" + title
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    full_directory = os.path.join(base_path, "networks", "physical_networks", "node_locations", title)
 
     with open(full_directory, 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
@@ -127,11 +127,10 @@ def get_list_of_coordinates_from_csv(csv_file):
     return coord_dict
 
 
-def get_nodes_in_radius(physical_network, x_coordinate, y_coordinate, exp, version):
-
-    # Read coordinates
-    coord_title = "networks/" + csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
-    x_coord, y_coord = get_list_of_coordinates_from_csv(coord_title)
+# def get_nodes_in_radius(physical_network, x_coordinate, y_coordinate, exp, version):
+#    # Read coordinates
+#    coord_title = "networks/" + csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
+#    x_coord, y_coord = get_list_of_coordinates_from_csv(coord_title)
 
 
 class InterdependentGraph(object):
@@ -143,39 +142,58 @@ class InterdependentGraph(object):
         physical_graph = self.physical_network
         if not os.path.exists('networks'):
             os.makedirs('networks')
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
         # write physical
-        physical_dir = "networks/physical_networks/links/" + \
-                       csv_title_generator("physic", x_coordinates, y_coordinates, pg_exponent,
-                                           version=version, model=model)
+        physical_file_name = csv_title_generator("physic", x_coordinates, y_coordinates, pg_exponent, version=version,
+                                                 model=model)
+        physical_dir = os.path.join(base_path, "networks", "physical_networks", "links", physical_file_name)
+
         print("---- ... writing")
         write_graph_with_node_names(physical_graph, physical_dir)
         print("---- Physical network saved in: {}".format(physical_dir))
     
-    def save_logic(self, x_coordinates, y_coordinates, pg_exponent, n_dependence, version="", model=""):
+    def save_logic(self, x_coordinates, y_coordinates, pg_exponent, version="", model=""):
+        base_path = os.path.dirname(os.path.abspath(__file__))
         logic_graph = self.AS_network
         if not os.path.exists('networks'):
             os.makedirs('networks')
         # write logic
         logic_name = csv_title_generator("logic", x_coordinates, y_coordinates, pg_exponent, version=version, model=model)
-        write_graph_with_node_names(logic_graph, "networks/" + logic_name)
 
-    def save_to_pdf(self, x_coordinates, y_coordinates, pg_exponent, n_dependence, version="", model=""):           
-        dependences_graph = self.interactions_network
+        logic_network_path = os.path.join(base_path, "networks", "logical_networks", logic_name)
+        write_graph_with_node_names(logic_graph, logic_network_path)
+
+    def save_interlinks_and_providers(self, x_coordinates, y_coordinates, pg_exponent, n_dependence, version="", model="",
+                                      interlink_mode=None):
+        interlink_graph = self.interactions_network
         p_provider = list(self.physical_providers)
         l_providers = list(self.AS_providers)
-        len_l_providers = len(l_providers)
+        len_l_providers = str(len(l_providers))
 
         if not os.path.exists('networks'):
             os.makedirs('networks')
-            
-        # write dependence
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
         dependence_name = csv_title_generator("dependence", x_coordinates, y_coordinates, pg_exponent, n_dependence,
                                               len_l_providers, version=version, model=model)
-        write_graph_with_node_names(dependences_graph, "networks/" + dependence_name)
-        # write providers
+
         providers_name = csv_title_generator("providers", x_coordinates, y_coordinates, pg_exponent, n_dependence,
                                              len_l_providers, version=version, model=model)
-        with open("networks/" + providers_name, 'w') as csvfile:
+
+        # set paths
+        if interlink_mode:
+            dependence_path = os.path.join(base_path, "networks", "interdependencies", interlink_mode, dependence_name)
+            providers_path = os.path.join(base_path, "networks", "providers", interlink_mode, providers_name)
+        else:
+            dependence_path = os.path.join(base_path, "networks", "interdependencies", dependence_name)
+            providers_path = os.path.join(base_path, "networks", "providers", providers_name)
+
+        # write dependence
+        write_graph_with_node_names(interlink_graph, dependence_path)
+
+        # write providers
+        with open(providers_path, 'w') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
             writer.writerow(["logic"])
             for i in range(len(l_providers)):
@@ -184,8 +202,11 @@ class InterdependentGraph(object):
             for i in range(len(p_provider)):
                 writer.writerow([p_provider[i]])
 
-    def create_from_csv(self, AS_net_csv, physical_net_csv, interactions_csv, nodes_title, providers_csv="", AS_provider_nodes=[],
+    def create_from_csv(self, AS_net_csv, physical_net_csv, interactions_csv, nodes_title, providers_csv="",
+                        AS_provider_nodes=[],
                         physical_provider_nodes=[]):
+        x = 0
+        y = 1
         # Create AS graph from csv file
         self.AS_network = set_graph_from_csv(AS_net_csv)
 
@@ -196,8 +217,8 @@ class InterdependentGraph(object):
         y_aloc = []
         for i in range(len(self.physical_network.vs)):
             node_name = self.physical_network.vs[i]['name']
-            x_aloc.append(coord_dict[node_name][0])
-            y_aloc.append(coord_dict[node_name][1])
+            x_aloc.append(coord_dict[node_name][x])
+            y_aloc.append(coord_dict[node_name][y])
 
         self.physical_network.vs['x_coordinate'] = x_aloc
         self.physical_network.vs['y_coordinate'] = y_aloc
@@ -207,7 +228,7 @@ class InterdependentGraph(object):
         self.interactions_network = igraph.Graph()
         self.interactions_network = set_graph_from_csv(interactions_csv)
         # set providers from file
-        if providers_csv is not "":
+        if providers_csv != "":
             AS_provider_nodes = []
             physical_provider_nodes = []
             with open(providers_csv, 'r') as csvfile:
@@ -301,28 +322,29 @@ class InterdependentGraph(object):
             len([a for a in self.AS_network.vs if self.AS_network.degree(a.index) > 0])
         return self
     
-    def create_from_empty_logic_physical(self, AS_graph_nodes_ids, AS_provider_nodes, physical_nodes_ids, physical_provider_nodes,
-                          interactions_graph):
+    def create_from_empty_logic_physical(self, logic_graph_nodes_ids, logic_provider_nodes, physical_nodes_ids,
+                                         physical_provider_nodes, interlink_graph):
         """ # save AS graph (create copy from original)
         self.AS_network = igraph.Graph([e.tuple for e in AS_graph.es])
         self.AS_network.vs["name"] = AS_graph.vs["name"]
          # save physical graph (create copy from original)
         self.physical_network = igraph.Graph([e.tuple for e in physical_graph.es])
         self.physical_network.vs["name"] = physical_graph.vs["name"] """
+
         # prepare and save interactions graph
-        self.interactions_network = igraph.Graph([e.tuple for e in interactions_graph.es])
-        self.interactions_network.vs["name"] = interactions_graph.vs["name"]
-        as_net_name_list = AS_graph_nodes_ids
-        physical_net_name_list = physical_nodes_ids
+        self.interactions_network = igraph.Graph([e.tuple for e in interlink_graph.es])
+        self.interactions_network.vs["name"] = interlink_graph.vs["name"]
+
         type_list = []
         for node in self.interactions_network.vs:
-            if node['name'] in as_net_name_list:
+            if node['name'] in logic_graph_nodes_ids:
                 type_list.append(0)
-            elif node['name'] in physical_net_name_list:
+            elif node['name'] in physical_nodes_ids:
                 type_list.append(1)
         self.interactions_network.vs['type'] = type_list
         # save provider nodes
-        self.AS_providers = AS_provider_nodes
+        self.AS_providers = logic_provider_nodes
+
         self.physical_providers = physical_provider_nodes
         """ # save initial set of functional nodes
         self.initial_number_of_functional_nodes_in_AS_net = \
