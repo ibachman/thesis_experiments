@@ -2,7 +2,7 @@ from interdependent_network_library import *
 import network_generators as network_generators
 import igraph
 import datetime
-import random
+import operator
 
 
 def create_coordinates():
@@ -55,14 +55,10 @@ def create_physical_network(model, v=None, space_shapes=None):
 
 
 def test_igraph():
-    graph = igraph.Graph(3)
-    graph.vs['name'] = ["p0", "p1", "p2"]
-    graph.add_edges([("p0", "p1"), ("p1", "p2")])
-    print(graph)
-    print(graph.vs[0])
-    print(graph.vs[1])
-    print(graph.vs[2])
-    print(graph.get_edgelist())
+    graph = igraph.Graph(4)
+    graph.vs['name'] = ["p0", "p1", "p2", "p3"]
+    graph.add_edges([("p0", "p1"), ("p1", "p2"), ("p1","p3")])
+    print(graph.degree("p2"))
 
 
 def get_different_nodes(csv_file):
@@ -288,3 +284,45 @@ def create_logic_network(exp, version, n_logic=300):
 
     print("Logic network ready {}".format(datetime.datetime.now()))
 
+
+def get_ordered_nodes_by_degrees(graph):
+    list_node_name_degree = []
+    for node in graph.vs:
+        list_node_name_degree.append((node['name'], graph.degree(node)))
+    list_node_name_degree.sort(key=operator.itemgetter(1))
+    return list_node_name_degree
+
+
+def number_of_distinct_edges(edge_list):
+    edge_dict = {}
+    for edge in edge_list:
+        edge_n_0 = int((edge[0]).replace("p", ""))
+        edge_n_1 = int((edge[1]).replace("p", ""))
+        if edge_n_0 < edge_n_1:
+            edge_dict[edge] = ""
+        else:
+            inv_edge = (edge[1], edge[0])
+            edge_dict[inv_edge] = ""
+    return len(list(edge_dict.keys()))
+
+def create_extra_edges(model):
+    spaces = [[20,500], [100,100]]
+    graph_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/links/"
+    coord_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/node_locations/"
+    for s in spaces:
+        for v in range(1, 11):
+            graph_name = "physic_{}x{}_exp_2.5_v{}_m_{}.csv".format(s[0], s[1], v, model)
+            cord_name = "nodes_{}x{}_exp_2.5_v{}.csv".format(s[0], s[1], v)
+            coord_dict = get_list_of_coordinates_from_csv(coord_dir+cord_name)
+
+            graph1 = set_graph_from_csv(graph_dir+graph_name)
+
+            new_edges = network_generators.generate_edges_to_add_distance(graph1, coord_dict, 97, 640)
+            network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model,
+                                                 strategy="distance_aux")
+
+
+models = ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]
+#for model in models:
+#    print("----------- {} -----------".format(model))
+#    create_extra_edges(model)
