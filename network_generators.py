@@ -2,6 +2,7 @@ import random
 import math
 import numpy as np
 from interdependent_network_library import *
+import powerlaw
 import datetime
 __author__ = 'ivana'
 
@@ -441,10 +442,10 @@ def set_logic_suppliers(logic_network_nodes_ids, n_logic_suppliers):
 
 
 def generate_logic_network(n, exponent=2.5):
-    graph = generate_power_law_graph(n, exponent, 1.0)
+    graph = generate_power_law_graph(n, exponent)
     id_list = []
     for i in range(n):
-        id_list.append('l'.format(i))
+        id_list.append('l{}'.format(i))
     graph.vs['name'] = id_list
     return graph
 
@@ -571,37 +572,46 @@ def generate_erdos_renyi_graph(n):
             pass
 
 
-def generate_power_law_graph(n, lamda, epsilon):
+def generate_power_law_graph(n, lamda):
     node_degrees = get_degrees_power_law(n, lamda)
+    results = powerlaw.Fit(node_degrees, discrete=True)
+    alpha = results.power_law.alpha
+    diff = math.fabs(alpha - lamda)
+    epsilon = 0.05
+    tag_continue = False
     while True:
+        if tag_continue:
+            print(" .... next while true")
+        while diff > epsilon:
+            node_degrees = get_degrees_power_law(n, lamda)
+            results = powerlaw.Fit(node_degrees, discrete=True, suppress_output=True)
+            alpha = results.power_law.alpha
+            diff = math.fabs(alpha - lamda)
         try:
             g = igraph.Graph.Degree_Sequence(node_degrees, method="vl")
-            print("success")
+            print(len(g.get_edgelist()))
+            if len(g.get_edgelist()) < 330:
+                tag_continue = True
+                diff = epsilon + 1
+                continue
+            print("------------------------ {} {} --------------------------".format(alpha, lamda))
             return g
         except Exception:
-            node_degrees = get_degrees_power_law(n, lamda)
+            print("exept")
+            diff = epsilon + 1
             pass
-        except Warning:
-            pass
-
-    # results = powerlaw.Fit(node_degrees, discrete=True)
-    # alpha = results.power_law.alpha
-    # diff = math.fabs(alpha - lamda)
-    #
-    # while True:
-    #     while (diff > epsilon):
-    #         node_degrees = get_degrees_power_law(n, lamda)
-    #         results = powerlaw.Fit(node_degrees, discrete=True, suppress_output=True)
-    #
-    #         alpha = results.power_law.alpha
-    #         diff = math.fabs(alpha - lamda)
-    #     try:
-    #         g = Graph.Degree_Sequence(node_degrees, method="vl")
-    #         print "------------------------", alpha, lamda, "--------------------------"
-    #         return g
-    #     except Exception, e:
-    #         diff = epsilon + 1
-    #         pass
+    #while True:
+    #    try:
+    #        g = igraph.Graph.Degree_Sequence(node_degrees, method="vl")
+    #        print("success")
+    #        print(len(g.clusters()))
+    #        exit(12)
+    #        return g
+    #    except Exception:
+    #        node_degrees = get_degrees_power_law(n, lamda)
+    #        pass
+    #    except Warning:
+    #        pass
 
 
 def get_degrees_power_law(n, lamda):
