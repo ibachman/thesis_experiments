@@ -3,7 +3,6 @@ import network_generators as network_generators
 import igraph
 import datetime
 import random
-import connection_manager as cm
 
 
 def create_coordinates():
@@ -104,6 +103,7 @@ def set_graph_from_csv(csv_file, graph=None):
             second = row[1]
             graph.add_edge(first, second)
     return graph
+
 
 def net_and_extra_links(model, version, strategy=None):
     x_coordinate = 20
@@ -236,15 +236,55 @@ def check_edges(model):
         print("Model {} has problems".format(model))
 
 
-physical_network_nodes_ids = ["p{}".format(x) for x in list(range(2000))]
-logic_network_nodes_ids = ["l{}".format(x) for x in list(range(300))]
-max_number_of_interdependencies = 5
-as_suppliers = random.sample(logic_network_nodes_ids, 6)
-#g = network_generators.set_interdependencies(physical_network_nodes_ids, logic_network_nodes_ids, max_number_of_interdependencies,
-#                          as_suppliers, mode="semi random")
+def create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n_inter, version, interlink_type):
+    print("start {}".format(datetime.datetime.now()))
 
-#phys_suppliers = network_generators.set_physical_suppliers(g, as_suppliers)
-#print(phys_suppliers)
+    phys_id_list = []
+    for i in range(n_phys):
+        phys_id_list.append('p{}'.format(i))
 
-# tengo que guardar somewhere los "datos viejos" (legacy??) del paper del journal. DESPUES DE ESO puedo ponerme a sacar
-# todas las redes logicas e interdep y arcos extra y ble
+    logic_id_list = []
+    for i in range(n_logic):
+        logic_id_list.append('l{}'.format(i))
+
+    as_suppliers = network_generators.set_logic_suppliers(logic_id_list, n_logic_suppliers)
+
+    print("Logic suppliers ready {}".format(datetime.datetime.now()))
+
+    interdep_graph = network_generators.set_interdependencies(phys_id_list, logic_id_list, n_inter, as_suppliers,
+                                                              mode=interlink_type)
+
+    print("interdep ready {}".format(datetime.datetime.now()))
+
+    phys_suppliers = network_generators.set_physical_suppliers(interdep_graph, as_suppliers)
+
+    print("Phys suppliers ready {}".format(datetime.datetime.now()))
+
+    network_system = InterdependentGraph()
+    network_system.create_from_empty_logic_physical(logic_id_list, as_suppliers, phys_id_list, phys_suppliers,
+                                                    interdep_graph)
+
+    print("system created {}".format(datetime.datetime.now()))
+
+    network_system.save_interlinks_and_providers(n_inter, version=version, interlink_mode=interlink_type)
+
+    print("system saved {}".format(datetime.datetime.now()))
+
+
+def create_logic_network(exp, version, n_logic=300):
+    # generate AS network
+    print("Generating logic network ready {}".format(datetime.datetime.now()))
+    as_graph = network_generators.generate_logic_network(n_logic, exponent=exp)
+    #print(as_graph.degree_distribution())
+
+    network_system = InterdependentGraph()
+    number_of_components = len(as_graph.clusters())
+    if number_of_components > 1:
+        print("amount of connected components {}".format(number_of_components))
+        exit(2)
+
+    network_system.set_AS(as_graph)
+    network_system.save_logic(exp, version=version)
+
+    print("Logic network ready {}".format(datetime.datetime.now()))
+
