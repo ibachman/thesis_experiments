@@ -1,13 +1,10 @@
 from runnables import run_test, add_edges
 import create_phys_nets as cpn
-#from interdependent_networks.runnables import run_test, add_edges
-#
 import multiprocessing
 import argparse
 import queue
 import connection_manager as cm
 import sys
-# import interdependent_networks.connection_manager as cm
 
 
 def worker_run(worker_queue):
