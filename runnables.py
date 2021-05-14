@@ -1,12 +1,9 @@
 __author__ = 'ivana'
 import datetime
 import network_generators as network_generators
-#import interdependent_networks.network_generators as network_generators
 import tests_library as tests_library
-#import interdependent_networks.tests_library as tests_library
 from interdependent_network_library import *
-#from interdependent_networks.interdependent_network_library import *
-#
+
 
 
 def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
@@ -83,7 +80,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                 physical_attack_title = "legacy_{}".format(physical_attack_title)
             path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
-
+            print("will save results on: {}".format(path))
             tests_library.single_network_attack(network_system, "physical", path, iter_number, process_name=process_name)
 
         if attack_localized:
@@ -111,7 +108,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         as_graph = network_generators.generate_logic_network(n_logic, exponent=exp)
         network_system = InterdependentGraph()
         network_system.set_AS(as_graph)
-        network_system.save_logic(x_coordinate, y_coordinate, exp, version=version)
+        network_system.save_logic(exp, version=version)
 
         print("amount of connected components " + str(len(as_graph.clusters())))
         print("AS ready " + str(datetime.datetime.now()))
@@ -179,6 +176,7 @@ def add_edges(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers, versi
     add_random = 'random' in strategy
     add_degree = 'degree' in strategy
     add_distance = 'distance' in strategy
+    add_local_hubs = 'local_hubs' in strategy
     add_external = 'external' in strategy
     # Read current edges
     physical_graph_dir = os.path.join(path, "networks", "physical_networks", "links",
@@ -212,6 +210,12 @@ def add_edges(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers, versi
         new_edges = network_generators.generate_edges_to_add_degree(phys_graph, percentage, number_of_edges_to_add)
         strategy = "degree"
 
+    if add_local_hubs:
+        percentage = 97
+        new_edges = network_generators.generate_edges_to_add_distance_hubs(phys_graph, coord_dict, percentage,
+                                                                           number_of_edges_to_add)
+        strategy = "local_hubs"
+
     if add_distance:
         percentage = 97
         new_edges = network_generators.generate_edges_to_add_distance(phys_graph, coord_dict, percentage,
@@ -222,7 +226,7 @@ def add_edges(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers, versi
         dependence_tittle = "networks/" + csv_title_generator("dependence", x_coordinate, y_coordinate, exp, n_inter, 6,
                                                               version=version)
         dep_graph = set_graph_from_csv(dependence_tittle)
-        percentage = 10 #TODO
+        percentage = 10
         new_edges = network_generators.genererate_edges_by_degree(phys_graph, coord_dict, percentage,
                                                                   number_of_edges_to_add, external=True,
                                                                   dependence_graph=dep_graph)
