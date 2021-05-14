@@ -1,15 +1,9 @@
 __author__ = 'ivana'
 import random
-#import interdependent_networks.seismic_data.seismic_data_processor as sdp
 import seismic_data.seismic_data_processor as sdp
 from interdependent_network_library import *
-#import interdependent_networks.seismic_data.image_process as ip
 import seismic_data.image_process as ip
-#import interdependent_networks.map_handler as mp
 import map_handler as mp
-
-# from interdependent_networks.interdependent_network_library import *
-#
 import numpy
 import datetime
 
