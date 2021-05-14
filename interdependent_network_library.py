@@ -18,19 +18,22 @@ def save_as_csv(path, file_name, content_dict):
 
 def csv_title_generator(graph_type, x_axis_length, y_axis_length, pg_exponent, n_dependence="", l_providers="",
                         attack_type="", version="", model=""):
-    title = str(graph_type) + "_" + str(x_axis_length) + "x" + str(y_axis_length) + "_exp_" + str(pg_exponent)
-    
+    title = str(graph_type)
+
+    if x_axis_length != "" and y_axis_length != "":
+        title += "_{}x{}".format(x_axis_length, y_axis_length)
+    if pg_exponent != "":
+        title += "_exp_{}".format(pg_exponent)
     if n_dependence != "":
-        title += "_ndep_" + str(n_dependence)
+        title += "_ndep_{}".format(n_dependence)
     if attack_type != "":
-        title = title + "_att_" + str(attack_type)
+        title = title + "_att_{}".format(attack_type)
     if l_providers != "":
-        amount_of_logic_providers = str(l_providers)
-        title += "_lprovnum_" + str(amount_of_logic_providers)
+        title += "_lprovnum_{}".format(l_providers)
     if version != "":
-        title = title + "_v" + str(version)
+        title += "_v{}".format(version)
     if model != "":
-        title = title + "_m_" + str(model)
+        title += "_m_{}".format(model)
 
     title += ".csv"
     return title
@@ -153,19 +156,19 @@ class InterdependentGraph(object):
         write_graph_with_node_names(physical_graph, physical_dir)
         print("---- Physical network saved in: {}".format(physical_dir))
     
-    def save_logic(self, x_coordinates, y_coordinates, pg_exponent, version="", model=""):
+    def save_logic(self, pg_exponent, version=""):
         base_path = os.path.dirname(os.path.abspath(__file__))
         logic_graph = self.AS_network
         if not os.path.exists('networks'):
             os.makedirs('networks')
         # write logic
-        logic_name = csv_title_generator("logic", x_coordinates, y_coordinates, pg_exponent, version=version, model=model)
+        logic_name = csv_title_generator("logic", "", "", pg_exponent, version=version, model="")
 
         logic_network_path = os.path.join(base_path, "networks", "logical_networks", logic_name)
         write_graph_with_node_names(logic_graph, logic_network_path)
 
-    def save_interlinks_and_providers(self, x_coordinates, y_coordinates, pg_exponent, n_dependence, version="", model="",
-                                      interlink_mode=None):
+    def save_interlinks_and_providers(self, n_dependence, version="", model="", interlink_mode=None):
+
         interlink_graph = self.interactions_network
         p_provider = list(self.physical_providers)
         l_providers = list(self.AS_providers)
@@ -175,14 +178,15 @@ class InterdependentGraph(object):
             os.makedirs('networks')
         base_path = os.path.dirname(os.path.abspath(__file__))
 
-        dependence_name = csv_title_generator("dependence", x_coordinates, y_coordinates, pg_exponent, n_dependence,
+        dependence_name = csv_title_generator("dependence", "", "", "", n_dependence,
                                               len_l_providers, version=version, model=model)
 
-        providers_name = csv_title_generator("providers", x_coordinates, y_coordinates, pg_exponent, n_dependence,
+        providers_name = csv_title_generator("providers", "", "", "", n_dependence,
                                              len_l_providers, version=version, model=model)
 
         # set paths
         if interlink_mode:
+            interlink_mode = interlink_mode.replace(" ", "_")
             dependence_path = os.path.join(base_path, "networks", "interdependencies", interlink_mode, dependence_name)
             providers_path = os.path.join(base_path, "networks", "providers", interlink_mode, providers_name)
         else:

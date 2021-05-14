@@ -111,7 +111,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         as_graph = network_generators.generate_logic_network(n_logic, exponent=exp)
         network_system = InterdependentGraph()
         network_system.set_AS(as_graph)
-        network_system.save_logic(x_coordinate, y_coordinate, exp, version=version)
+        network_system.save_logic(exp, version=version)
 
         print("amount of connected components " + str(len(as_graph.clusters())))
         print("AS ready " + str(datetime.datetime.now()))
