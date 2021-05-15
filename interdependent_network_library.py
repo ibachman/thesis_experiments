@@ -1,7 +1,7 @@
 import igraph
 import csv
 import os
-
+import time
 
 def save_as_csv(path, file_name, content_dict):
     title = os.path.join(path,file_name)
@@ -134,6 +134,8 @@ def get_list_of_coordinates_from_csv(csv_file):
 #    # Read coordinates
 #    coord_title = "networks/" + csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
 #    x_coord, y_coord = get_list_of_coordinates_from_csv(coord_title)
+class RandomAttackTimeoutError(Exception):
+    pass
 
 
 class InterdependentGraph(object):
@@ -356,56 +358,63 @@ class InterdependentGraph(object):
         return self
 
     def attack_nodes(self, list_of_nodes_to_delete):
-        current_graph_A = self.AS_network
-        current_graph_B = self.physical_network
+        current_logic_graph = self.AS_network
+        current_physical_graph = self.physical_network
         current_interaction_graph = self.interactions_network
 
+        seconds_threshold = 10
+        time_threshold = seconds_threshold
+        start_time = time.time()
         while True:
+            current_time = time.time()
             # if there are no more nodes to delete, i.e, the network has stabilized, then stop
             if len(list_of_nodes_to_delete) == 0:
                 break
+            else:
+                if current_time - start_time > time_threshold:
+                    raise RandomAttackTimeoutError
             # Delete the nodes to delete on each network, including the interactions network
-            nodes_to_delete_in_A = [node for node in list_of_nodes_to_delete if node in current_graph_A.vs['name']]
-            nodes_to_delete_in_B = [node for node in list_of_nodes_to_delete if node in current_graph_B.vs['name']]
-            current_graph_A.delete_vertices(nodes_to_delete_in_A)
-            current_graph_B.delete_vertices(nodes_to_delete_in_B)
+            nodes_to_delete_in_logic = [node for node in list_of_nodes_to_delete if node in current_logic_graph.vs['name']]
+            nodes_to_delete_in_physic = [node for node in list_of_nodes_to_delete if node in current_physical_graph.vs['name']]
+            current_logic_graph.delete_vertices(nodes_to_delete_in_logic)
+            current_physical_graph.delete_vertices(nodes_to_delete_in_physic)
             current_interaction_graph.delete_vertices(
                 [n for n in list_of_nodes_to_delete if n in current_interaction_graph.vs['name']])
 
             # Determine all nodes that fail because they don't have connection to a provider
-            nodes_without_connection_to_provider_in_A = set(range(len(current_graph_A.vs)))
-            alive_nodes_in_A = current_graph_A.vs['name']
+            nodes_without_connection_to_provider_in_logic = set(range(len(current_logic_graph.vs)))
+            alive_nodes_in_logic = current_logic_graph.vs['name']
             for provider_node in self.AS_providers:
-                if provider_node not in alive_nodes_in_A:
+                if provider_node not in alive_nodes_in_logic:
                     continue
-                length_to_provider_in_network_A = current_graph_A.shortest_paths(provider_node)[0]
-                zipped_list_A = zip(length_to_provider_in_network_A, range(len(current_graph_A.vs)))
+                length_to_provider_in_logic_net = current_logic_graph.shortest_paths(provider_node)[0]
+                zipped_list_A = zip(length_to_provider_in_logic_net, range(len(current_logic_graph.vs)))
                 current_nodes_without_connection_to_provider_in_A = \
                     set([a[1] for a in zipped_list_A if a[0] == float('inf')])
-                nodes_without_connection_to_provider_in_A = \
-                    nodes_without_connection_to_provider_in_A \
+                nodes_without_connection_to_provider_in_logic = \
+                    nodes_without_connection_to_provider_in_logic \
                         .intersection(current_nodes_without_connection_to_provider_in_A)
 
-            nodes_without_connection_to_provider_in_B = set(range(len(current_graph_B.vs)))
-            alive_nodes_in_B = current_graph_B.vs['name']
+            nodes_without_connection_to_provider_in_B = set(range(len(current_physical_graph.vs)))
+            alive_nodes_in_B = current_physical_graph.vs['name']
             for provider_node in self.physical_providers:
                 if provider_node not in alive_nodes_in_B:
                     continue
                 # print provider_node, "is alive"
-                length_to_provider_in_network_B = current_graph_B.shortest_paths(provider_node)[0]
-                zipped_list_B = zip(length_to_provider_in_network_B, range(len(current_graph_B.vs)))
+                length_to_provider_in_network_B = current_physical_graph.shortest_paths(provider_node)[0]
+                zipped_list_B = zip(length_to_provider_in_network_B, range(len(current_physical_graph.vs)))
                 current_nodes_without_connection_to_provider_in_B = \
                     set([a[1] for a in zipped_list_B if a[0] == float('inf')])
                 nodes_without_connection_to_provider_in_B = \
                     nodes_without_connection_to_provider_in_B \
                         .intersection(current_nodes_without_connection_to_provider_in_B)
             # save the names (unique identifier) of the nodes lost because can't access a provider
-            names_of_nodes_lost_in_A = set(current_graph_A.vs(list(nodes_without_connection_to_provider_in_A))['name'])
-            names_of_nodes_lost_in_B = set(current_graph_B.vs(list(nodes_without_connection_to_provider_in_B))['name'])
+            names_of_nodes_lost_in_A = set(current_logic_graph.vs(list(nodes_without_connection_to_provider_in_logic))['name'])
+            names_of_nodes_lost_in_B = set(current_physical_graph.vs(list(nodes_without_connection_to_provider_in_B))['name'])
             # Delete all nodes that fail because they don't have connection to a provider on each network including
             # interactions network
-            current_graph_A.delete_vertices(nodes_without_connection_to_provider_in_A)
-            current_graph_B.delete_vertices(nodes_without_connection_to_provider_in_B)
+            current_logic_graph.delete_vertices(nodes_without_connection_to_provider_in_logic)
+            current_physical_graph.delete_vertices(nodes_without_connection_to_provider_in_B)
             nodes_to_delete = list(names_of_nodes_lost_in_A.union(names_of_nodes_lost_in_B))
             current_interaction_graph.delete_vertices(
                 [n for n in nodes_to_delete if n in current_interaction_graph.vs['name']])

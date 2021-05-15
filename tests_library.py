@@ -37,9 +37,18 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
             graph_copy = InterdependentGraph()
             graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers,
                                          interlink_graph)
-            list_of_nodes_to_attack = random.sample(samp, i)
+            while True:
+                try:
+                    list_of_nodes_to_attack = random.sample(samp, i)
+                    graph_copy.attack_nodes(list_of_nodes_to_attack)
 
-            graph_copy.attack_nodes(list_of_nodes_to_attack)
+                    break
+                except RandomAttackTimeoutError:
+                    print("*** TIMEOUT FOR ITERATION {} - {} *** [[{}]]".format(((j+1), i), process_name,
+                                                                                datetime.datetime.now()))
+                    print("*** {} ***".format(list_of_nodes_to_attack))
+                    pass
+
             iteration_results[(i-1)].append(graph_copy.get_ratio_of_funtional_nodes_in_AS_network())
     
     print("Staring to write results " + str(datetime.datetime.now()))
