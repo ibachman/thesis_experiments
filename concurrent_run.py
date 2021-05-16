@@ -41,7 +41,7 @@ def worker_run(worker_queue):
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
-            print("[COMPLETED] Job {} completed - {} --".format(task["job_id"]), process_name)
+            print("[COMPLETED] Job {} completed - {} --".format(task["job_id"], process_name))
         worker_queue.task_done()
         if worker_queue.empty():
             break
@@ -145,43 +145,90 @@ def run_from_file(max_workers, filename, file_lines=[]):
     run_command_lines(max_workers, lines)
 
 
-def run_command_lines(max_workers, command_lines, from_server=False):
-    job_id = -1
-    work_queue = multiprocessing.JoinableQueue()
-    the_pool = multiprocessing.Pool(max_workers,
-                                    worker_run,
-                                    (work_queue,))  # <-- The trailing comma is necessary!
-    the_pool.close()
-    for job in command_lines:
-        if from_server:
-            line = job["line"]
-            job_id = job["job_id"]
-        else:
-            line = job
-        new_task = parse_task_args(line)
-        new_task["job_id"] = job_id
-        new_task["server_connection"] = from_server
-        work_queue.put(new_task)
-    work_queue.close()
-    work_queue.join()
-    return work_queue
+def run_command_lines(max_workers, command_lines, from_server=None, parallel=True, process_name=""):
+    if parallel:
+        job_id = -1
+        work_queue = multiprocessing.JoinableQueue()
+        the_pool = multiprocessing.Pool(max_workers,
+                                        worker_run,
+                                        (work_queue,))  # <-- The trailing comma is necessary!
+        the_pool.close()
+        for job in command_lines:
+            if from_server:
+                line = job["line"]
+                job_id = job["job_id"]
+            else:
+                line = job
+            new_task = parse_task_args(line)
+            new_task["job_id"] = job_id
+            new_task["server_connection"] = from_server
+            work_queue.put(new_task)
+        work_queue.close()
+        # the_pool.join()
+        work_queue.join()
+        return work_queue
+    else:
+        for job in command_lines:
+            if from_server:
+                line = job["line"]
+                job_id = job["job_id"]
+            else:
+                line = job
+            task = parse_task_args(line)
+            task["job_id"] = job_id
+            task["server_connection"] = from_server
+
+            print('{} -- borking'.format(process_name))
+            # avisar que job_start (task["job_id"])
+            if task["job_id"] > -1:
+                task["server_connection"].set_job_doing(task["job_id"])
+                print("[STARTING] worker {} starting Job {} ".format(process_name, task["job_id"]))
+
+            if task['args.createnetworks']:
+                cpn.create_physical_network(task['model'], v=task['version'])
+            elif task['make_edges']:
+                add_edges(task['x_coordinate'], task['y_coordinate'], task['exp'], task['n_inter'],
+                          task['n_logic_suppliers'], task['version'], task['n_logic'], task['n_phys'],
+                          task['iter'], task['model'], task['phys_iteration'], task['strategy'])
+            else:
+                run_test(task['x_coordinate'], task['y_coordinate'], task['exp'], task['n_inter'],
+                         task['n_logic_suppliers'], task['version'], task['n_logic'], task['n_phys'],
+                         task['iter'], task['READ_flag'], task['attack_type'], task['model'], task['logic'],
+                         task['physical'], task['phys_iteration'], task['strategy'],
+                         localized_attack_data=task['localized_attacks'],
+                         process_name=process_name,
+                         seismic_data=task['seismic_data'],
+                         legacy=task['legacy'])
+            # avisar que job_done (task["job_id"])
+            if task["job_id"] > -1:
+                task["server_connection"].set_job_done(task["job_id"])
+                print("[COMPLETED] Job {} completed - {} --".format(task["job_id"], process_name))
+
+        print('[FINISHED] Finished batch')
 
 
-def run_batch_from_server(server_name, n_workers, machine_name):
+def run_batch_from_server(server_name, n_workers, machine_name, parallel=True):
     server_connection = cm.ConnectionManager(server_name)
     if machine_name:
         server_connection.set_machine_name(machine_name)
-    lines = server_connection.get_all_jobs_from_server("PENDING")
+    if parallel:
+        lines = server_connection.get_all_jobs_from_server("PENDING")
+    else:
+        lines = server_connection.get_jobs_from_server(1)
+        n_workers = 1
     n_lines = len(lines)
     if n_lines > 0:
         if n_lines < n_workers:
             rest = n_workers - n_lines
             print("[FREE CORES] received {} jobs for {} cores, {} cores available".format(n_lines, n_workers, rest))
             n_workers = len(lines)
-        run_command_lines(n_workers, lines, from_server=server_connection)
+            run_command_lines(n_workers, lines, from_server=server_connection, parallel=parallel,
+                              process_name=machine_name)
     else:
         print("[EMPTY ANSWER] No lines received")
         return True
+
+
 
 
 parser = argparse.ArgumentParser(description="Run experiments with the given variables")

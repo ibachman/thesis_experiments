@@ -5,12 +5,12 @@ import time
 import numpy
 
 
-def run_forever_from_server(server_name, number_of_workers, machine_name):
+def run_forever_from_server(server_name, number_of_workers, machine_name, is_parallel=True):
     all_times = []
     while True:
         start_time = time.time()
         print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
-        no_more_jobs = cr.run_batch_from_server(server_name, number_of_workers, machine_name)
+        no_more_jobs = cr.run_batch_from_server(server_name, number_of_workers, machine_name, parallel=is_parallel)
         print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
         finish_time = time.time()
         total_time = finish_time-start_time
@@ -62,6 +62,7 @@ if __name__ == "__main__":
                                  help='machine name', default="")
     argument_parser.add_argument('-t', '--timelimit', type=str,
                                  help='time limit to run things', default=None)
+    argument_parser.add_argument('-nt', '--nothread', action='store_true', help='do not use thread, set --workers to 1')
     args = argument_parser.parse_args()
     # arguments
     n_workers = args.workers
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     get_lines_from = args.getlinesfrom
     machine_name = args.machinename
     max_time = args.timelimit
+    no_thread = args.nothread
 
     # use only a set of lines as commands
     if file_line > 0:
@@ -83,12 +85,18 @@ if __name__ == "__main__":
     if arg_file is not None:
         cr.run_from_file(n_workers, arg_file)
 
+    if no_thread:
+        n_workers = 1
+        parallel = False
+    else:
+        parallel = True
+
     # get jobs from a server
     if get_lines_from is not None:
         if max_time:
             run_from_server_for(get_lines_from, n_workers, machine_name, max_time)
         else:
-            run_forever_from_server(get_lines_from, n_workers, machine_name)
+            run_forever_from_server(get_lines_from, n_workers, machine_name, is_parallel=parallel)
 
 
 
