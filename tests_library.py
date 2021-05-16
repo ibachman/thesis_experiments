@@ -44,7 +44,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
                     print("+++ ITERATION {} - {} +++ [[{}]]".format(((j + 1), i),
                                                                                 process_name,
                                                                                 datetime.datetime.now()))
-                    print("+++ {} +++".format(list_of_nodes_to_attack))
+
                     break
                 except RandomAttackTimeoutError:
                     print("*** TIMEOUT FOR ITERATION {} - {} *** [[{}]]".format(((j+1), i), process_name,
