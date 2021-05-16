@@ -6,6 +6,7 @@ import seismic_data.image_process as ip
 import map_handler as mp
 import numpy
 import datetime
+import gc
 
 
 def single_network_attack(interdependent_network, network_to_attack, file_name, iter_number, process_name=""):
@@ -52,6 +53,9 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
                     pass
 
             iteration_results[(i-1)].append(graph_copy.get_ratio_of_funtional_nodes_in_AS_network())
+            del graph_copy
+            del list_of_nodes_to_attack
+            gc.collect()
     
     print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
 
