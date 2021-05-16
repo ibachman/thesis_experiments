@@ -8,18 +8,20 @@ import sys
 
 
 def worker_run(worker_queue):
-    print('worker running')
+    process_name = multiprocessing.current_process().name
+
+    print('{} -- worker running'.format(process_name))
     while True:
         try:
             task = worker_queue.get(timeout=60)
         except queue.Empty:
             break
-        print('borking - ' + str(multiprocessing.current_process().name))
-        process_name = str(multiprocessing.current_process().name)
+        print('{} -- borking'.format(process_name))
+
         # avisar que job_start (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_doing(task["job_id"])
-            print("[STARTING] worker {} starting Job {} ".format(multiprocessing.current_process().name, task["job_id"]))
+            print("[STARTING] worker {} starting Job {} ".format(process_name, task["job_id"]))
 
         if task['args.createnetworks']:
             cpn.create_physical_network(task['model'], v=task['version'])
@@ -39,7 +41,7 @@ def worker_run(worker_queue):
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
-            print("[COMPLETED] Job {} completed".format(task["job_id"]))
+            print("[COMPLETED] Job {} completed - {} --".format(task["job_id"]), process_name)
         worker_queue.task_done()
         if worker_queue.empty():
             break

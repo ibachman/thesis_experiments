@@ -9,7 +9,7 @@ import datetime
 
 
 def single_network_attack(interdependent_network, network_to_attack, file_name, iter_number, process_name=""):
-    print(" -> Results path: {}".format(file_name))
+    print(" -> {} -- Results path: {}".format(process_name, file_name))
     physical_network = interdependent_network.get_phys()
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
@@ -41,20 +41,26 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
                 try:
                     list_of_nodes_to_attack = random.sample(samp, i)
                     graph_copy.attack_nodes(list_of_nodes_to_attack)
-
+                    print("+++ ITERATION {} - {} +++ [[{}]]".format(((j + 1), i),
+                                                                                process_name,
+                                                                                datetime.datetime.now()))
+                    print("+++ {} +++".format(list_of_nodes_to_attack))
                     break
                 except RandomAttackTimeoutError:
                     print("*** TIMEOUT FOR ITERATION {} - {} *** [[{}]]".format(((j+1), i), process_name,
                                                                                 datetime.datetime.now()))
                     print("*** {} ***".format(list_of_nodes_to_attack))
                     pass
+                except Exception as e:
+                    print("*** ERROR IN ATTACK NODES {} ***".format(e.__class__))
+                    pass
 
             iteration_results[(i-1)].append(graph_copy.get_ratio_of_funtional_nodes_in_AS_network())
     
-    print("Staring to write results " + str(datetime.datetime.now()))
+    print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
 
     with open(file_name, 'w') as csvfile:
-        print(" -> Writing results on: {}".format(file_name))
+        print(" -> {} -- Writing results on: {}".format(process_name, file_name))
         fieldnames = ["1-p", "mean", "std"]
         writer = csv.DictWriter(csvfile,fieldnames=fieldnames)
         writer.writeheader()

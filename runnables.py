@@ -19,7 +19,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     attack_seismic = 'seismic' in attack_types
 
     if READ_flag:
-        print("start {}".format(datetime.datetime.now()))
+        print("{} -- start {}".format(process_name, datetime.datetime.now()))
         network_system = InterdependentGraph()
         path = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(path, "networks")
@@ -52,12 +52,12 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         network_system.create_from_csv(logic_dir, physical_dir, interlink_dir, nodes_loc_dir,
                                        providers_csv=providers_dir)
 
-        print("System created {} from:".format(datetime.datetime.now()))
-        print(" -> Logical network: {}".format(logic_dir))
-        print(" -> Inter-links: {}".format(interlink_dir))
-        print(" -> Providers: {}".format(providers_dir))
-        print(" -> Physical network: {}".format(physical_dir))
-        print(" -> Node allocation: {}".format(nodes_loc_dir))
+        print("{} -- System created {} from:".format(process_name, datetime.datetime.now()))
+        print("{} -- -> Logical network: {}".format(process_name, logic_dir))
+        print("{} -- -> Inter-links: {}".format(process_name, interlink_dir))
+        print("{} -- -> Providers: {}".format(process_name, providers_dir))
+        print("{} -- -> Physical network: {}".format(process_name, physical_dir))
+        print("{} -- -> Node allocation: {}".format(process_name, nodes_loc_dir))
         sub_dir = 'simple_graphs'
 
         if strategy != '':
@@ -68,11 +68,11 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
             edges_to_add = get_list_of_tuples_from_csv(path)
             network_system.add_edges_to_physical_network(edges_to_add)
-            print(" -> Added edges from: {}".format(path))
+            print("{} -- -> Added edges from: {}".format(process_name, path))
             sub_dir = strategy
 
         if attack_phys:
-            print("physical test attack {}".format(datetime.datetime.now()))
+            print("{} -- physical test attack {}".format(process_name, datetime.datetime.now()))
             # attack only physical network
             physical_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter,
                                                         attack_type="physical", version=version, model=model)
@@ -80,25 +80,25 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                 physical_attack_title = "legacy_{}".format(physical_attack_title)
             path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
-            print("will save results on: {}".format(path))
+            print("{} -- will save results on: {}".format(process_name, path))
             tests_library.single_network_attack(network_system, "physical", path, iter_number, process_name=process_name)
 
         if attack_localized:
-            print("localized attack test {}".format(datetime.datetime.now()))
+            print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))
             # attack physical network using localized attacks
             radius = localized_attack_data["radius"]
             tests_library.localized_attack(iter_number, network_system, x_coordinate, y_coordinate, radius, n_inter,
                                            n_logic_suppliers, version, model, strategy=strategy, legacy=legacy)
-            print("localized attack test {}".format(datetime.datetime.now()))
+            print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))
         #
         if attack_seismic:
-            print("seismic attack test {}".format(datetime.datetime.now()))
+            print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
             # aca la idea es poner una función que lea datos sísmicos de un archivo y llamé a la otra función que hace
             # en serio el ataque
             seismic_data_file = seismic_data["file"]
             tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model,
                                           seismic_data_file)
-            print("seismic attack test {}".format(datetime.datetime.now()))
+            print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
 
         else:
             pass
