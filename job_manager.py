@@ -21,6 +21,9 @@ def run_forever_from_server(server_name, number_of_workers, machine_name, is_par
             print("[NO MORE JOBS] - Batches done {}".format(len(all_times)-1))
             print("[AVERAGE TIME] {}".format(parse_seconds_to_time(numpy.mean(all_times))))
             break
+        if not is_parallel:
+            print("[AVERAGE TIME] {}".format(parse_seconds_to_time(numpy.mean(all_times))))
+            break
 
 
 def run_from_server_for(server_name, number_of_workers, machine_name, max_time):
