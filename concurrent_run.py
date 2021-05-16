@@ -222,7 +222,7 @@ def run_batch_from_server(server_name, n_workers, machine_name, parallel=True):
             rest = n_workers - n_lines
             print("[FREE CORES] received {} jobs for {} cores, {} cores available".format(n_lines, n_workers, rest))
             n_workers = len(lines)
-            run_command_lines(n_workers, lines, from_server=server_connection, parallel=parallel,
+        run_command_lines(n_workers, lines, from_server=server_connection, parallel=parallel,
                               process_name=machine_name)
     else:
         print("[EMPTY ANSWER] No lines received")
