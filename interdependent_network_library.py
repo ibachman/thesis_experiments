@@ -362,7 +362,7 @@ class InterdependentGraph(object):
         current_physical_graph = self.physical_network
         current_interaction_graph = self.interactions_network
 
-        seconds_threshold = 10
+        seconds_threshold = 600 # 10 minutes
         time_threshold = seconds_threshold
         start_time = time.time()
         while True:
