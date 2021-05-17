@@ -30,6 +30,8 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
         iteration_range = n_phys
 
     iteration_results = []
+    list_of_nodes_to_attack = []
+
     for j in range(1, n_phys + n_logic):
         iteration_results.append([])
     for j in range(iter_number):
@@ -38,6 +40,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
             graph_copy = InterdependentGraph()
             graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers,
                                          interlink_graph)
+
             while True:
                 try:
                     list_of_nodes_to_attack = random.sample(samp, i)
@@ -56,7 +59,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
             del graph_copy
             del list_of_nodes_to_attack
             gc.collect()
-    
+
     print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
 
     with open(file_name, 'w') as csvfile:

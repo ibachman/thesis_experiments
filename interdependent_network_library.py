@@ -370,7 +370,6 @@ class InterdependentGraph(object):
             current_time = time.time()
             # if there are no more nodes to delete, i.e, the network has stabilized, then stop
             if len(list_of_nodes_to_delete) == 0:
-                gc.collect()
                 break
             else:
                 if current_time - start_time > time_threshold:
