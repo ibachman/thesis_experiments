@@ -1,5 +1,5 @@
 from runnables import run_test, add_edges
-import create_phys_nets as cpn
+#import create_phys_nets as cpn
 import multiprocessing
 import argparse
 import queue
@@ -23,9 +23,9 @@ def worker_run(worker_queue):
             task["server_connection"].set_job_doing(task["job_id"])
             print("[STARTING] worker {} starting Job {} ".format(process_name, task["job_id"]))
 
-        if task['args.createnetworks']:
-            cpn.create_physical_network(task['model'], v=task['version'])
-        elif task['make_edges']:
+        #if task['args.createnetworks']:
+        #    cpn.create_physical_network(task['model'], v=task['version'])
+        if task['make_edges']:
             add_edges(task['x_coordinate'], task['y_coordinate'], task['exp'], task['n_inter'],
                       task['n_logic_suppliers'], task['version'], task['n_logic'], task['n_phys'],
                       task['iter'], task['model'], task['phys_iteration'], task['strategy'])
@@ -184,9 +184,9 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                 task["server_connection"].set_job_doing(task["job_id"])
                 print("[STARTING] worker {} starting Job {} ".format(process_name, task["job_id"]))
 
-            if task['args.createnetworks']:
-                cpn.create_physical_network(task['model'], v=task['version'])
-            elif task['make_edges']:
+            #if task['args.createnetworks']:
+                #cpn.create_physical_network(task['model'], v=task['version'])
+            if task['make_edges']:
                 add_edges(task['x_coordinate'], task['y_coordinate'], task['exp'], task['n_inter'],
                           task['n_logic_suppliers'], task['version'], task['n_logic'], task['n_phys'],
                           task['iter'], task['model'], task['phys_iteration'], task['strategy'])
@@ -207,12 +207,14 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
         print('[FINISHED] Finished batch')
 
 
-def run_batch_from_server(server_name, n_workers, machine_name, parallel=True):
+def run_batch_from_server(server_name, n_workers, machine_name, parallel=True, check_abandoned=False):
     server_connection = cm.ConnectionManager(server_name)
     if machine_name:
         server_connection.set_machine_name(machine_name)
     if parallel:
         lines = server_connection.get_all_jobs_from_server("PENDING")
+    elif check_abandoned:
+        lines = server_connection.restart_abandoned_job()
     else:
         lines = server_connection.get_jobs_from_server(1)
         n_workers = 1
@@ -227,9 +229,6 @@ def run_batch_from_server(server_name, n_workers, machine_name, parallel=True):
     else:
         print("[EMPTY ANSWER] No lines received")
         return True
-
-
-
 
 parser = argparse.ArgumentParser(description="Run experiments with the given variables")
 parser.add_argument('-ln', '--logicnodes', type=int, help='amount of nodes in the logic network')
