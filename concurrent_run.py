@@ -37,7 +37,8 @@ def worker_run(worker_queue):
                      localized_attack_data=task['localized_attacks'],
                      process_name=process_name,
                      seismic_data=task['seismic_data'],
-                     legacy=task['legacy'])
+                     legacy=task['legacy'],
+                     debug=task['debug'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -88,6 +89,7 @@ def parse_task_args(line):
     task['x_coordinate'] = args.xcoordinate
     task['y_coordinate'] = args.ycoordinate
     task['legacy'] = args.legacy
+    task['debug'] = args.debug
     task['exp'] = args.exponentpg
     task['n_inter'] = args.interdependenceamount
     task['n_logic_suppliers'] = args.logicsuppliers
@@ -258,6 +260,7 @@ parser.add_argument('-sf', '--seismicdatafile',type=str, help='Test seismic atta
 
 parser.add_argument('-cn', '--createnetworks', action='store_true', help='Create networks from debug function')
 parser.add_argument('-leg', '--legacy', action='store_true', help='use legacy files')
+parser.add_argument('-d', '--debug', action='store_true', help='save as debug results')
 
 if __name__ == "__main__":
     line = " ".join(sys.argv[1::])

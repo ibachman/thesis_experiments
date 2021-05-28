@@ -334,8 +334,8 @@ def generate_edges_to_add_distance(phys_graph, coord_dict, percentage, n):
 
             for j in higher_deg_nodes_available:#- number_of_nodes_to_iterate):
                 candidate = phys_graph.vs[sorted_nodes[j]]['name']
-                x1 = coord_dict[small_degree_node][x]#x_coord[small_degree_node]
-                y1 = coord_dict[small_degree_node][y]#y_coord[small_degree_node]
+                x1 = coord_dict[small_degree_node][x]
+                y1 = coord_dict[small_degree_node][y]
                 x2 = coord_dict[candidate][x]
                 y2 = coord_dict[candidate][y]
 

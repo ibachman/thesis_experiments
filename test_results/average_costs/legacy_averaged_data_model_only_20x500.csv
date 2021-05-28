@@ -1,8 +1,8 @@
 \begin{table}[]
 \begin{tabular}{|l|l|l|l|}
 \hline
-model & 5NN & GG & RNG\\ \hline
-mean & 16881.52 & 8276.02 & 4386.83\\ \hline
-std & 178.34 & 77.74 & 42.4\\ \hline
+model & 5NN       & GG        & RNG      \\ \hline
+mean  & 16,881.52 & 8,276.02 & 4,386.83  \\ \hline
+std   & 178.34    & 77.74     & 42.4     \\ \hline
 \end{tabular}
 \end{table}

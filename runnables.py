@@ -5,11 +5,10 @@ import tests_library as tests_library
 from interdependent_network_library import *
 
 
-
 def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
-             seismic_data=[], legacy=False):
+             seismic_data=[], legacy=False, debug=False):
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -78,10 +77,13 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                                                         attack_type="physical", version=version, model=model)
             if legacy:
                 physical_attack_title = "legacy_{}".format(physical_attack_title)
+            if debug:
+                print("OK DEBUG")
+                physical_attack_title = "debug_{}".format(physical_attack_title)
             path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
             print("{} -- will save results on: {}".format(process_name, path))
-            tests_library.single_network_attack(network_system, "physical", path, iter_number, process_name=process_name)
+            tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW", process_name=process_name)
 
         if attack_localized:
             print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))

@@ -427,7 +427,9 @@ class InterdependentGraph(object):
         return self
 
     def get_ratio_of_funtional_nodes_in_AS_network(self):
-        functional_nodes_in_AS_net = len([a for a in self.AS_network.vs if self.AS_network.degree(a.index) > 0])
+        funct_nodes = [a for a in self.AS_network.vs if self.AS_network.degree(a.index) > 0]
+        print("+++ {}".format(funct_nodes))
+        functional_nodes_in_AS_net = len(funct_nodes)
         return (functional_nodes_in_AS_net * 1.0) / (self.initial_number_of_functional_nodes_in_AS_net * 1.0)
 
     def node_mtfr(self):
