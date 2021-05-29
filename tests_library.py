@@ -587,9 +587,11 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
 
         for lnode in logic_nodes_to_delete:
             logic_input[lnode] = False
+
         timestamp_3 = time.time()
         delta_2 = (timestamp_3 - timestamp_2) * amp
         all_delta[1].append(delta_2)
+
         # Delete all nodes that fail because they don't have connection to a provider on each network including
         # interactions network
         for inode in range(n_inter_nodes):
@@ -600,6 +602,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
             else:
                 p_index = inter_roseta_phys[inode_name]
                 inter_input[inode] = phys_input[p_index]
+
         timestamp_4 = time.time()
         delta_3 = (timestamp_4 - timestamp_3) * amp
         all_delta[2].append(delta_3)
@@ -610,6 +613,9 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
             phys_input_old = phys_input.copy()
             phys_input = get_physical_nodes_lost_by_cc(physical_graph, phys_input,  phys_providers, physical_roseta)
             if phys_input_old == phys_input:
+
+                del phys_input_old
+
                 break
         timestamp_5 = time.time()
         delta_4 = (timestamp_5 - timestamp_4) * amp
@@ -620,15 +626,19 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
             logic_input_old = logic_input.copy()
             logic_input = get_physical_nodes_lost_by_cc(logic_graph, logic_input, logic_providers, logic_roseta)
             if logic_input == logic_input_old:
+                del logic_input_old
                 break
+
         timestamp_6 = time.time()
         delta_5 = (timestamp_6 - timestamp_5) * amp
         all_delta[4].append(delta_5)
+
         # interlink
         while True:
             inter_input_old = inter_input.copy()
             inter_input = remove_isolated_nodes_from_inter(interlink_graph, inter_input, inner_inter_roseta)
             if inter_input == inter_input_old:
+                del inter_input_old
                 break
 
         timestamp_7 = time.time()
@@ -647,9 +657,11 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         for lnode in range(n_logic_nodes):
             if not logic_input[lnode]:
                 current_logic_nodes_to_delete_dict.add(lnode)
+
         timestamp_9 = time.time()
         delta_8 = (timestamp_9 - timestamp_8)*amp
         all_delta[7].append(delta_8)
+
         for inode in range(n_inter_nodes):
             if not inter_input[inode]:
                 inode_name = intern_name_by_index[inode]
@@ -659,11 +671,14 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
                 else:
                     p_index = inter_roseta_phys[inode_name]
                     current_phys_nodes_to_delete_dict.add(p_index)
+
         timestamp_10 = time.time()
         delta_9 = (timestamp_10 - timestamp_9)*amp
         all_delta[8].append(delta_9)
+
         current_phys_nodes_to_delete = list(current_phys_nodes_to_delete_dict)
         current_logic_nodes_to_delete = list(current_logic_nodes_to_delete_dict)
+
         timestamp_11 = time.time()
         delta_10 = (timestamp_11 - timestamp_10)*amp
         all_delta[9].append(delta_10)
@@ -674,7 +689,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         print("Total loops: {}".format(len(all_loop_time)))
         for i in range(10):
             print("--- Average time in segment {}: {}".format(i+1, numpy.average(all_delta[i])))
-
+    #gc.collect()
     return logic_nodes_to_delete
 
 
@@ -703,9 +718,13 @@ def get_physical_nodes_lost_by_cc(physical_graph, phys_input, providers, phys_ro
             is_alive = False
         if not is_alive:
             new_lost_nodes = new_lost_nodes + name_c
+
+    del physical_graph_copy
+
     for node in new_lost_nodes:
         index = phys_roseta[node]
         phys_input_copy[index] = False
+
     return phys_input_copy
 
 
@@ -721,7 +740,11 @@ def remove_isolated_nodes_from_inter(inter_graph, inter_input, inter_roseta):
         named_c = inter_graph_copy.vs[c]['name']
         if len(named_c) < 2:
             new_lost_nodes = new_lost_nodes + named_c
+
+    del inter_graph_copy
+
     for node in new_lost_nodes:
         index = inter_roseta[node]
         inter_input_copy[index] = False
     return inter_input_copy
+

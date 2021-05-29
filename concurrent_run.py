@@ -162,6 +162,7 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
             else:
                 line = job
             new_task = parse_task_args(line)
+
             new_task["job_id"] = job_id
             new_task["server_connection"] = from_server
             work_queue.put(new_task)
@@ -200,7 +201,8 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          localized_attack_data=task['localized_attacks'],
                          process_name=process_name,
                          seismic_data=task['seismic_data'],
-                         legacy=task['legacy'])
+                         legacy=task['legacy'],
+                         debug=task['debug'])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
