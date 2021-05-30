@@ -95,7 +95,7 @@ if __name__ == "__main__":
     if no_thread:
         n_workers = 1
         parallel = False
-        allow_loop = False
+        allow_loop = True
         check_abandoned = False
     elif check_abandoned:
         n_workers = 1

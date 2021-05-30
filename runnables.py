@@ -8,7 +8,8 @@ from interdependent_network_library import *
 def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
-             seismic_data=[], legacy=False, debug=False):
+             seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
+             interlink_version=1):
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -19,6 +20,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
     if READ_flag:
         print("{} -- start {}".format(process_name, datetime.datetime.now()))
+        interlink_type_names = {"provider_priority": "pp", "full_random": "fr", "semi_random":"sr"}
         network_system = InterdependentGraph()
         path = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(path, "networks")
@@ -27,6 +29,16 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         physical_dir = os.path.join(path, "physical_networks", "links")
         interlink_dir = os.path.join(path, "interdependencies", "full_random")
         providers_dir = os.path.join(path, "providers")
+
+        if interlink_type == "provider_priority":
+            interlink_dir = os.path.join(path, "interdependencies", "provider_priority")
+            providers_dir = os.path.join(providers_dir, "provider_priority")
+        elif interlink_type == "semi_random":
+            interlink_dir = os.path.join(path, "interdependencies", "semi_random")
+            providers_dir = os.path.join(providers_dir, "semi_random")
+        elif interlink_type == "full_random":
+            providers_dir = os.path.join(providers_dir, "full_random")
+
         node_loc_dir = os.path.join(path, "physical_networks", "node_locations")
 
         if legacy:
@@ -36,9 +48,12 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             providers_title = "legacy_{}".format(csv_title_generator("providers",  "20", "500", exp, n_inter, 6,
                                                                      version=1))
         else:
-            logic_title = csv_title_generator("logic", "20", "500", exp, version=1)
-            interlink_title = csv_title_generator("dependence",  "20", "500", exp, n_inter, 6, version=1)
-            providers_title = csv_title_generator("providers",  "20", "500", exp, n_inter, 6, version=1)
+            if logic_file_name:
+                logic_title = logic_file_name
+            else:
+                logic_title = "legacy_{}".format(csv_title_generator("logic", "20", "500", exp, version=1))
+            interlink_title = csv_title_generator("dependence",  "", "", "", n_inter, 6, version=interlink_version)
+            providers_title = csv_title_generator("providers",  "", "", "", n_inter, 6, version=interlink_version)
 
         nodes_loc_title = csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
         physic_title = csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=version, model=model)
@@ -75,15 +90,27 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             # attack only physical network
             physical_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter,
                                                         attack_type="physical", version=version, model=model)
+
+            if logic_file_name:
+                physical_attack_title = physical_attack_title.replace("result_","")
+                lver = (logic_file_name.replace("ogic_exp_2.5_","")).replace(".csv","")
+                physical_attack_title = "result_{}_{}".format(lver, physical_attack_title)
+            if interlink_type:
+                physical_attack_title = physical_attack_title.replace("result_", "")
+                inter_name = "{}v{}".format(interlink_type_names[interlink_type], interlink_version)
+                physical_attack_title = "result_{}_{}".format(inter_name, physical_attack_title)
             if legacy:
                 physical_attack_title = "legacy_{}".format(physical_attack_title)
             if debug:
                 print("OK DEBUG")
                 physical_attack_title = "debug_{}".format(physical_attack_title)
+
             path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
             print("{} -- will save results on: {}".format(process_name, path))
-            tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW", process_name=process_name)
+            exit(22)
+            tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW",
+                                                process_name=process_name)
 
         if attack_localized:
             print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))

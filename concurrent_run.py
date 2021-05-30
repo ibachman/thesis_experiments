@@ -38,7 +38,10 @@ def worker_run(worker_queue):
                      process_name=process_name,
                      seismic_data=task['seismic_data'],
                      legacy=task['legacy'],
-                     debug=task['debug'])
+                     debug=task['debug'],
+                     logic_file_name=task['logic_file_name'],
+                     interlink_type=task['interlink_type'],
+                     interlink_version=task['interlink_version'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -88,6 +91,10 @@ def parse_task_args(line):
     task['args.createnetworks'] = args.createnetworks
     task['x_coordinate'] = args.xcoordinate
     task['y_coordinate'] = args.ycoordinate
+    task['logic_file_version'] = args.logic_file_version
+    task['logic_file_name'] = None
+    task['interlink_type'] = args.interlink_type
+    task['interlink_version'] = args.interlink_version
     task['legacy'] = args.legacy
     task['debug'] = args.debug
     task['exp'] = args.exponentpg
@@ -124,6 +131,9 @@ def parse_task_args(line):
     task['localized_attacks'] = localized_attack_data
 
     seismic_data = {}
+    if task['logic_file_version']:
+        task['logic_file_name'] = "logic_exp_{}_v{}.csv".format(task['exp'], task['logic_file_version'])
+
     if task['seismic_data_file']:
         print(task['seismic_data_file'])
         seismic_data["file"] = task['seismic_data_file']
@@ -202,7 +212,10 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          process_name=process_name,
                          seismic_data=task['seismic_data'],
                          legacy=task['legacy'],
-                         debug=task['debug'])
+                         debug=task['debug'],
+                         logic_file_name=task['logic_file_name'],
+                         interlink_type=task['interlink_type'],
+                         interlink_version=task['interlink_version'])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
@@ -247,7 +260,7 @@ parser.add_argument('-i', '--iterations', type=int, help='Number of iterations t
 parser.add_argument('-r', '--read', action='store_true', help='If this is specified will read the networks from file')
 parser.add_argument('-at', '--attack_types', type=str, nargs='?', const='', default='physical,logic,both',
                     help='Optional argument. Type of attack to simulate, valid values are physical, logic and both')
-parser.add_argument('-m', '--model', type=str, nargs='?', const='', default='MRN,GG,5NN',
+parser.add_argument('-m', '--model', type=str, nargs='?', const='', default='RNG,GG,5NN',
                     help='Optional argument. Type of Physical Network to simulate, valid values are MRN, GG and 5NN')
 parser.add_argument('-l', '--logic', action='store_true', help='If this is specified will create logic layer')
 parser.add_argument('-p', '--physical', action='store_true', help='If this is specified will create physical network')
@@ -258,11 +271,15 @@ parser.add_argument('-lar', '--localizedattacksradius',  nargs='*', help='Test l
 parser.add_argument('-lac', '--localizedattackscenter',  nargs=2, help='Test localized attacks. Receives [x_center, y_center]')
 parser.add_argument('-laf', '--localizedattacksfile',  nargs=1, help='Test localized attacks. Receives filename]')
 
-parser.add_argument('-sf', '--seismicdatafile',type=str, help='Test seismic attacks. Receives filename]')
+parser.add_argument('-sf', '--seismicdatafile', type=str, help='Test seismic attacks. Receives filename]')
 
 parser.add_argument('-cn', '--createnetworks', action='store_true', help='Create networks from debug function')
 parser.add_argument('-leg', '--legacy', action='store_true', help='use legacy files')
 parser.add_argument('-d', '--debug', action='store_true', help='save as debug results')
+parser.add_argument('-lfv', '--logic_file_version', type=int, help='logic file version', default=None)
+parser.add_argument('-intt', '--interlink_type', type=str, help='type of interlink used', default=None)
+parser.add_argument('-intv', '--interlink_version', type=int, help='type of interlink used', default=1)
+
 
 if __name__ == "__main__":
     line = " ".join(sys.argv[1::])
