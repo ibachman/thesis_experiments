@@ -284,7 +284,7 @@ class InterdependentGraph(object):
     def get_phys_providers(self):
         return self.physical_providers
 
-    def get_interd(self):
+    def get_interlinks(self):
         return self.interactions_network
     
     def set_AS(self, AS_graph):
@@ -296,6 +296,10 @@ class InterdependentGraph(object):
     def set_physical(self, physical_graph):
         #self.physical_network = igraph.Graph([e.tuple for e in physical_graph.es])
         self.physical_network = physical_graph
+        return self
+
+    def set_interlinks(self, interlinks_graph):
+        self.interactions_network = interlinks_graph
         return self
 
     def create_from_graph(self, AS_graph, AS_provider_nodes, physical_graph, physical_provider_nodes,
