@@ -11,6 +11,8 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
              interlink_version=1):
 
+    fix_bridge_nodes_interlinks = True
+
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
     attack_both = 'both' in attack_types
@@ -86,11 +88,46 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             sub_dir = strategy
 
         if attack_phys:
+            # key = (ppv,ndep, lv)
+            fix_interlink_dict = {
+                (3, 7, 2): [('p1105', 'l52'), ('p1488', 'l52'), ('p1918', 'l52'), ('p1058', 'l52'), ('p915', 'l52'),
+                            ('p1277', 'l52'), ('p219', 'l294'), ('p1965', 'l294'), ('p1418', 'l294'), ('p1426', 'l294'),
+                            ('p744', 'l294')],
+                (1, 7, 2): [('p1285', 'l52')],
+                (3, 7, 3): [('p679', 'l251'), ('p665', 'l251'), ('p673', 'l251'), ('p1452', 'l251')],
+                (1, 7, 3): [],
+                (3, 7, 4): [('p1261', 'l279'), ('p502', 'l279'), ('p1477', 'l279'), ('p1731', 'l279'),
+                            ('p355', 'l279')],
+                (1, 7, 4): [('p1566', 'l279'), ('p303', 'l279'), ('p1983', 'l279'), ('p842', 'l279'), ('p951', 'l279'),
+                            ('p1447', 'l279')],
+                (3, 7, 5): [('p1461', 'l138'), ('p59', 'l138'), ('p1629', 'l138'), ('p257', 'l138')],
+                (1, 7, 5): [],
+                (3, 7, 6): [],
+                (1, 7, 6): [('p804', 'l87')],
+                (3, 7, 7): [('p1350', 'l2')],
+                (1, 7, 7): [('p620', 'l2'), ('p683', 'l2'), ('p286', 'l2'), ('p770', 'l2'), ('p1650', 'l2'),
+                            ('p1178', 'l2')],
+                (3, 7, 8): [('p1140', 'l88'), ('p261', 'l88'), ('p347', 'l88')],
+                (1, 7, 8): [('p1928', 'l88'), ('p22', 'l88'), ('p943', 'l88'), ('p1117', 'l88')],
+                (3, 7, 9): [],
+                (1, 7, 9): [('p122', 'l179'), ('p643', 'l179')],
+                (3, 7, 10): [('p1333', 'l138'), ('p1692', 'l138'), ('p153', 'l138'), ('p270', 'l138')],
+                (1, 7, 10): [],
+                (3, 3, 2): [('p73', 'l52')],
+                (3, 3, 3): [('p1553', 'l192'), ('p462', 'l192'), ('p387', 'l251')],
+                (3, 3, 4): [],
+                (3, 3, 5): [('p1358', 'l138'), ('p1877', 'l138')],
+                (3, 3, 6): [],
+                (3, 3, 7): [],
+                (3, 3, 8): [('p1758', 'l88'), ('p1173', 'l88')],
+                (3, 3, 9): [],
+                (3, 3, 10): [('p175', 'l138'), ('p436', 'l138')]
+                                  }
             print("{} -- physical test attack {}".format(process_name, datetime.datetime.now()))
+
             # attack only physical network
             physical_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter,
                                                         attack_type="physical", version=version, model=model)
-
             if logic_file_name:
                 physical_attack_title = physical_attack_title.replace("result_","")
                 lver = (logic_file_name.replace("ogic_exp_2.5_","")).replace(".csv","")
@@ -104,11 +141,30 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             if debug:
                 print("OK DEBUG")
                 physical_attack_title = "debug_{}".format(physical_attack_title)
+            ################################################################
+            if fix_bridge_nodes_interlinks:
+                lv = int((logic_file_name.replace("logic_exp_2.5_v", "")).replace(".csv", ""))
+                print(" KEY: {}".format((interlink_version, n_inter, lv)))
+                interlinks_to_add = fix_interlink_dict[(interlink_version, n_inter, lv)]
+                interlinks = network_system.get_interlinks()
+                og_number_of_interlinks = len(interlinks.get_edgelist())
+                print(og_number_of_interlinks)
+                existing_nodes = interlinks.vs["name"]
+                new_nodes_to_add = [edge[0] for edge in interlinks_to_add if edge[0] not in existing_nodes]
+                interlinks.add_vertices(new_nodes_to_add)
+                interlinks.add_edges(interlinks_to_add)
+                new_number_of_interlinks = len(interlinks.get_edgelist())
+                print("Links added: {}".format(new_number_of_interlinks-og_number_of_interlinks))
+                print("Expected links to add: {}".format(len(fix_interlink_dict[(interlink_version, n_inter, lv)])))
+                network_system.set_interlinks(interlinks)
+                print(len((network_system.get_interlinks()).get_edgelist()))
+                physical_attack_title = "m_{}".format(physical_attack_title)
+            ################################################################
 
             path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
             print("{} -- will save results on: {}".format(process_name, path))
-            exit(22)
+
             tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW",
                                                 process_name=process_name)
 

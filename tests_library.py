@@ -26,7 +26,7 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interlink_graph = interdependent_network.get_interd()
+    interlink_graph = interdependent_network.get_interlinks()
 
     logic_name_by_index = get_name_by_index(logic_network)
 
@@ -91,7 +91,7 @@ def single_network_attack_old(interdependent_network, network_to_attack, file_na
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interlink_graph = interdependent_network.get_interd()
+    interlink_graph = interdependent_network.get_interlinks()
 
     if not network_to_attack == "logic" and not network_to_attack == "physical":
         print("Choose a valid network to attack")
@@ -155,7 +155,7 @@ def whole_system_attack(interdependent_network, file_name, iter_number):
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interd()
+    interdep_graph = interdependent_network.get_interlinks()
     n_phys = len(physical_network.vs)
     n_logic = len(logic_network.vs)
     iteration_results = []
@@ -192,7 +192,7 @@ def single_localized_attack(interdependent_network, x_coordinate,
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interd()
+    interdep_graph = interdependent_network.get_interlinks()
 
     if center_function:
         x_center, y_center = center_function(physical_network, max_radius, x_coordinate, y_coordinate)
@@ -357,7 +357,7 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
     logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interd()
+    interdep_graph = interdependent_network.get_interlinks()
     param["epicenter"] = {"x": x_center, "y": y_center}
 
     # Get nodes to attack
