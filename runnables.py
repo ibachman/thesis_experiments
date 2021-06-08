@@ -11,7 +11,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
              interlink_version=1):
 
-    fix_bridge_nodes_interlinks = True
+    fix_bridge_nodes_interlinks = False
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -159,6 +159,8 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                 network_system.set_interlinks(interlinks)
                 print(len((network_system.get_interlinks()).get_edgelist()))
                 physical_attack_title = "m_{}".format(physical_attack_title)
+            else:
+                print("RUNNING WITHOUT FIXING INTERLINKS")
             ################################################################
 
             path = os.path.dirname(os.path.abspath(__file__))
