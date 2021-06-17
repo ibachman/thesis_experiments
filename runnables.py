@@ -11,7 +11,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
              interlink_version=1):
 
-    fix_bridge_nodes_interlinks = False
+    fix_bridge_nodes_interlinks = True
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -90,6 +90,17 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
         if attack_phys:
             # key = (ppv,ndep, lv)
             fix_interlink_dict = {
+                (3, 1, 5): [],
+                (3, 2, 5): [('p15', 'l138')],
+                (3, 3, 5): [('p1198', 'l138'), ('p43', 'l138')],
+                (3, 4, 5): [('p1689', 'l138'), ('p293', 'l138')],
+                (3, 5, 5): [('p1070', 'l138'), ('p1142', 'l138'), ('p178', 'l138')],
+                (3, 6, 5): [],
+                (3, 7, 5): [('p1621', 'l138'), ('p1410', 'l138'), ('p1782', 'l138'), ('p1708', 'l138')],
+                (3, 8, 5): [('p837', 'l138'), ('p428', 'l138'), ('p1093', 'l138')],
+                (3, 9, 5): [],
+                (3, 10, 5): [],
+
                 (3, 7, 2): [('p1105', 'l52'), ('p1488', 'l52'), ('p1918', 'l52'), ('p1058', 'l52'), ('p915', 'l52'),
                             ('p1277', 'l52'), ('p219', 'l294'), ('p1965', 'l294'), ('p1418', 'l294'), ('p1426', 'l294'),
                             ('p744', 'l294')],
