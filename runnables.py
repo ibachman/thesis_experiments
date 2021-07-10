@@ -11,7 +11,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
              interlink_version=1):
 
-    fix_bridge_nodes_interlinks = True
+    fix_bridge_nodes_interlinks = False
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -22,7 +22,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
     if READ_flag:
         print("{} -- start {}".format(process_name, datetime.datetime.now()))
-        interlink_type_names = {"provider_priority": "pp", "full_random": "fr", "semi_random":"sr"}
+        interlink_type_names = {"provider_priority": "pp", "full_random": "fr", "semi_random": "sr"}
         network_system = InterdependentGraph()
         path = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(path, "networks")
