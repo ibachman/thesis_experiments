@@ -465,8 +465,12 @@ def generate_edges_to_add_degree(phys_graph, percentage, number_of_edges_to_add)
 
 
 def save_edges_to_csv(edge_list, x_coordinates, y_coordinates, pg_exponent, n_dependence="", l_providers="",
-                       version="", model="", strategy=""):
-    title = csv_title_generator("candidates", x_coordinates, y_coordinates, pg_exponent, n_dependence,
+                       version="", model="", strategy="", title_mod=""):
+    start_title = "candidates"
+    if len(title_mod) > 0:
+        start_title = "{}_{}".format(start_title, title_mod)
+
+    title = csv_title_generator(start_title, x_coordinates, y_coordinates, pg_exponent, n_dependence,
                                 l_providers, attack_type="", version=version, model=model)
 
     path = os.path.dirname(os.path.abspath(__file__))

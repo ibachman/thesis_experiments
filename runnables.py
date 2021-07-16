@@ -10,8 +10,11 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None,
              interlink_version=1):
-
+    #########################
     fix_bridge_nodes_interlinks = False
+    #########################
+    title_mod = "1250"
+    #########################
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -78,9 +81,12 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
         if strategy != '':
             path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy,
-                                csv_title_generator("candidates", x_coordinate, y_coordinate, exp,
-                                                    version=version, model=model))
+            start_title = "candidates"
+
+            if len(title_mod) > 0:
+                start_title = "{}_{}".format(start_title, title_mod)
+            title = csv_title_generator(start_title , x_coordinate, y_coordinate, exp, version=version, model=model)
+            path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy, title)
 
             edges_to_add = get_list_of_tuples_from_csv(path)
             network_system.add_edges_to_physical_network(edges_to_add)
@@ -234,6 +240,8 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             if debug:
                 print("OK DEBUG")
                 physical_attack_title = "debug_{}".format(physical_attack_title)
+            if len(title_mod) > 0:
+                physical_attack_title = "d{}_{}".format(title_mod, physical_attack_title)
             ################################################################
             if fix_bridge_nodes_interlinks:
                 lv = int((logic_file_name.replace("logic_exp_2.5_v", "")).replace(".csv", ""))
