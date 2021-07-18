@@ -13,7 +13,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     fix_bridge_nodes_interlinks = False
     #########################
-    title_mod = "1250"
+    title_mod = "3000"
     #########################
 
     attack_logic = 'logic' in attack_types
