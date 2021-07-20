@@ -1,0 +1,8 @@
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+model & RNG & GG & GPA & 5NN & YAO & ER\\ \hline
+mean & 4,504.97 & 8,691.3 & 14,752.24 & 17,076.08 & 16,310.33 & 393,755.05\\ \hline
+std & 63.15 & 100.03 & 379.29 & 280.59 & 117.53 & 6,884.71\\ \hline
+\end{tabular}
+\end{table}
