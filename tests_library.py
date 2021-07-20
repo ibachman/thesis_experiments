@@ -51,7 +51,9 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
         iteration_range = n_phys
     for j in range(1, iteration_range):
         iteration_results.append([])
-    if not nodes_to_attack:
+
+    if nodes_to_attack is None:
+        print(nodes_to_attack)
         for j in range(iter_number):
             print(" -------> [[{}]] -- {} -- iteration: {}".format(datetime.datetime.now(), process_name, (j + 1)))
             for i in range(1, iteration_range):
