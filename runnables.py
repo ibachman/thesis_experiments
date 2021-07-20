@@ -13,7 +13,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     fix_bridge_nodes_interlinks = False
     #########################
-    title_mod = "3000"
+    title_mod = ""
     #########################
 
     attack_logic = 'logic' in attack_types
@@ -271,11 +271,32 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                                                 process_name=process_name)
 
         if attack_localized:
+
+            # attack only physical network
+            localized_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter, attack_type="localized", version=version, model=model)
+            if logic_file_name:
+                localized_attack_title = localized_attack_title.replace("result_", "")
+                lver = (logic_file_name.replace("ogic_exp_2.5_", "")).replace(".csv", "")
+                localized_attack_title = "result_{}_{}".format(lver, localized_attack_title)
+            if interlink_type:
+                localized_attack_title = localized_attack_title.replace("result_", "")
+                inter_name = "{}v{}".format(interlink_type_names[interlink_type], interlink_version)
+                localized_attack_title = "result_{}_{}".format(inter_name, localized_attack_title)
+            if legacy:
+                localized_attack_title = "legacy_{}".format(localized_attack_title)
+            if debug:
+                print("OK DEBUG")
+                localized_attack_title = "debug_{}".format(localized_attack_title)
+            if len(title_mod) > 0:
+                localized_attack_title = "d{}_{}".format(title_mod, localized_attack_title)
+
+            print("{} -- will save results on: {}".format(process_name, localized_attack_title))
+
             print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))
             # attack physical network using localized attacks
             radius = localized_attack_data["radius"]
             tests_library.localized_attack(iter_number, network_system, x_coordinate, y_coordinate, radius, n_inter,
-                                           n_logic_suppliers, version, model, strategy=strategy, legacy=legacy)
+                                           n_logic_suppliers, version, model, strategy=strategy, legacy=legacy, f_name=localized_attack_title)
             print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))
         #
         if attack_seismic:

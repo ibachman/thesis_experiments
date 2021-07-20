@@ -20,8 +20,9 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
         return None
 
 
-def single_network_attack_new(interdependent_network, network_to_attack, file_name, iter_number, process_name=""):
-    print(" -> {} -- Results path: {}".format(process_name, file_name))
+def single_network_attack_new(interdependent_network, network_to_attack, file_name, iter_number, process_name="", nodes_to_attack=None):
+    if not nodes_to_attack:
+        print(" -> {} -- Results path: {}".format(process_name, file_name))
     physical_network = interdependent_network.get_phys()
     phys_suppliers = interdependent_network.get_phys_providers()
     logic_network = interdependent_network.get_as()
@@ -36,9 +37,7 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
 
     phys_name_by_index = get_name_by_index(physical_network)
 
-    intern_name_by_index, inter_roseta_phys, inter_roseta_logic = parse_interlink_network(interlink_graph,
-                                                                                          phys_name_by_index,
-                                                                                          logic_name_by_index)
+    intern_name_by_index, inter_roseta_phys, inter_roseta_logic = parse_interlink_network(interlink_graph, phys_name_by_index, logic_name_by_index)
 
     n_phys = len(physical_network.vs)
     n_logic = len(logic_network.vs)
@@ -52,37 +51,45 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
         iteration_range = n_phys
     for j in range(1, iteration_range):
         iteration_results.append([])
+    if not nodes_to_attack:
+        for j in range(iter_number):
+            print(" -------> [[{}]] -- {} -- iteration: {}".format(datetime.datetime.now(), process_name, (j + 1)))
+            for i in range(1, iteration_range):
+                # print("({}) -- {}".format(i, datetime.datetime.now()))
+                list_of_nodes_to_attack = random.sample(samp, i)
+                logic_nodes_deleted = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
+                                                        physical_network, phys_suppliers, inter_roseta_phys,
+                                                        inter_roseta_logic, list_of_nodes_to_attack, physical_roseta,
+                                                        logical_roseta, logic_network, logic_suppliers, interlink_graph,
+                                                        inner_inter_roseta)
+                iteration_results[(i - 1)].append((n_logic - len(logic_nodes_deleted)) / n_logic)
 
-    for j in range(iter_number):
-        print(" -------> [[{}]] -- {} -- iteration: {}".format(datetime.datetime.now(), process_name, (j + 1)))
-        for i in range(1, iteration_range):
-            # print("({}) -- {}".format(i, datetime.datetime.now()))
-            list_of_nodes_to_attack = random.sample(samp, i)
-            logic_nodes_deleted = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
-                                                    physical_network, phys_suppliers, inter_roseta_phys,
-                                                    inter_roseta_logic, list_of_nodes_to_attack, physical_roseta,
-                                                    logical_roseta, logic_network, logic_suppliers, interlink_graph,
-                                                    inner_inter_roseta)
-            iteration_results[(i - 1)].append((n_logic - len(logic_nodes_deleted)) / n_logic)
+                net = network_with_deleted_nodes(logic_network, logic_nodes_deleted)
+                functional_nodes = [a for a in net.vs if net.degree(a.index) > 0]
+                functional_nodes_in_AS_net = len(functional_nodes)
+                #print((functional_nodes_in_AS_net * 1.0) / (n_logic * 1.0))
+                #print("*** {}".format(functional_nodes))
 
-            net = network_with_deleted_nodes(logic_network, logic_nodes_deleted)
-            functional_nodes = [a for a in net.vs if net.degree(a.index) > 0]
-            functional_nodes_in_AS_net = len(functional_nodes)
-            #print((functional_nodes_in_AS_net * 1.0) / (n_logic * 1.0))
-            #print("*** {}".format(functional_nodes))
+        print("Ended at {}".format(datetime.datetime.now()))
+        print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
 
-    print("Ended at {}".format(datetime.datetime.now()))
-    print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
-
-    with open(file_name, 'w') as csvfile:
-        print(" -> {} -- Writing results on: {}".format(process_name, file_name))
-        fieldnames = ["1-p", "mean", "std"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for i in range(iteration_range - 1):
-            writer.writerow({'1-p': ((i + 1) * 1.0) / iteration_range,
-                             'mean': numpy.mean(iteration_results[i]),
-                             'std': numpy.std(iteration_results[i])})
+        with open(file_name, 'w') as csvfile:
+            print(" -> {} -- Writing results on: {}".format(process_name, file_name))
+            fieldnames = ["1-p", "mean", "std"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for i in range(iteration_range - 1):
+                writer.writerow({'1-p': ((i + 1) * 1.0) / iteration_range,
+                                 'mean': numpy.mean(iteration_results[i]),
+                                 'std': numpy.std(iteration_results[i])})
+    else:
+        logic_nodes_deleted = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
+                                                physical_network, phys_suppliers, inter_roseta_phys,
+                                                inter_roseta_logic, nodes_to_attack, physical_roseta,
+                                                logical_roseta, logic_network, logic_suppliers, interlink_graph,
+                                                inner_inter_roseta)
+        gl = (n_logic - len(logic_nodes_deleted)) / n_logic
+        return gl
 
 
 def single_network_attack_old(interdependent_network, network_to_attack, file_name, iter_number, process_name=""):
@@ -189,10 +196,10 @@ def single_localized_attack(interdependent_network, x_coordinate,
                      y_coordinate, x_center=-1, y_center=-1, radius=-1,
                      max_radius=-1, center_function=None, radius_function=None, exp="2.5", version="0", file=None):
     physical_network = interdependent_network.get_phys()
-    phys_suppliers = interdependent_network.get_phys_providers()
-    logic_network = interdependent_network.get_as()
-    logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interlinks()
+    #phys_suppliers = interdependent_network.get_phys_providers()
+    #logic_network = interdependent_network.get_as()
+    #logic_suppliers = interdependent_network.get_as_providers()
+    #interdep_graph = interdependent_network.get_interlinks()
 
     if center_function:
         x_center, y_center = center_function(physical_network, max_radius, x_coordinate, y_coordinate)
@@ -202,8 +209,8 @@ def single_localized_attack(interdependent_network, x_coordinate,
         exit("Localized attacks: negative center and/or raidus")
 
     # Create copy from original - why tho?
-    graph_copy = InterdependentGraph()
-    graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers, interdep_graph)
+    #graph_copy = InterdependentGraph()
+    #graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers, interdep_graph)
 
     # Get nodes to attack
     nodes_to_attack = []  # name list
@@ -214,8 +221,12 @@ def single_localized_attack(interdependent_network, x_coordinate,
             nodes_to_attack.append(vertex["name"])
 
     # attack:
-    graph_copy.attack_nodes(nodes_to_attack)
-    g_l = graph_copy.get_ratio_of_funtional_nodes_in_AS_network()
+
+    g_l = single_network_attack_new(interdependent_network, "", "", 0, nodes_to_attack=nodes_to_attack)
+
+
+    #graph_copy.attack_nodes(nodes_to_attack)
+    #g_l = graph_copy.get_ratio_of_funtional_nodes_in_AS_network()
     aux_str = "["
     for n in nodes_to_attack:
         aux_str += "{}.".format(n)
@@ -231,7 +242,20 @@ def single_localized_attack(interdependent_network, x_coordinate,
 
 def localized_attack(iterations, interdependent_network, x_coordinate,
                      y_coordinate, radius, ndep, providers, version, model, strategy='', center_file=None, centers=None,
-                     max_radius=-1, center_function=None, radius_function=None, exp="2.5", file=None, legacy=False):
+                     max_radius=-1, center_function=None, radius_function=None, exp="2.5", file=None, legacy=False, process_name="", f_name=""):
+    file_name = f_name
+    #csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep, attack_type="localized", version=version, model=model)
+    if legacy:
+        file_name = "legacy_{}".format(file_name)
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(path, "test_results")
+    if strategy != '':
+        path = os.path.join(path, strategy)
+    else:
+        path = os.path.join(path, "simple_graphs")
+    path = os.path.join(path, "localized_attacks")
+    #print("{} -- will save results on: {}/{}".format(process_name, path, file_name))
 
     if not centers:
         centers = []
@@ -249,20 +273,7 @@ def localized_attack(iterations, interdependent_network, x_coordinate,
     contents = []
     for position in centers:
         for r in radius:
-            contents.append(single_localized_attack(interdependent_network, x_coordinate, y_coordinate, x_center=position["x"],
-                                    y_center=position["y"], radius=r))
-    file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep,
-                                    attack_type="localized", version=version, model=model)
-    if legacy:
-        file_name = "legacy_{}".format(file_name)
-
-    path = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(path, "test_results")
-    if strategy != '':
-        path = os.path.join(path, strategy)
-    else:
-        path = os.path.join(path, "simple_graphs")
-    path = os.path.join(path, "localized_attacks")
+            contents.append(single_localized_attack(interdependent_network, x_coordinate, y_coordinate, x_center=position["x"], y_center=position["y"], radius=r))
 
     save_as_csv(path, file_name, contents)
 
