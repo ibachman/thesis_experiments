@@ -15,6 +15,8 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     title_mod = ""
     #########################
+    capped_random = "distance"
+    #########################
 
     attack_logic = 'logic' in attack_types
     attack_phys = 'physical' in attack_types
@@ -85,7 +87,9 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
 
             if len(title_mod) > 0:
                 start_title = "{}_{}".format(start_title, title_mod)
-            title = csv_title_generator(start_title , x_coordinate, y_coordinate, exp, version=version, model=model)
+            title = csv_title_generator(start_title, x_coordinate, y_coordinate, exp, version=version, model=model)
+            if len(capped_random) > 0 and strategy == "random":
+                title = title.replace("candidates_", "candidates_cl_{}_".format(capped_random))
             path = os.path.join(path, "networks", "physical_networks", "extra_edges", strategy, title)
 
             edges_to_add = get_list_of_tuples_from_csv(path)
@@ -265,8 +269,13 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             ################################################################
 
             path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
+
+            if len(capped_random) > 0 and strategy == "random":
+                path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", capped_random, physical_attack_title)
+            else:
+                path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
             print("{} -- will save results on: {}".format(process_name, path))
+            exit(44)
             tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW",
                                                 process_name=process_name)
 
@@ -300,12 +309,32 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             print("{} -- localized attack test {}".format(process_name, datetime.datetime.now()))
         #
         if attack_seismic:
+            # attack only physical network
+            seismic_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter, attack_type="seismic", version=version, model=model)
+            if logic_file_name:
+                seismic_attack_title = seismic_attack_title.replace("result_", "")
+                lver = (logic_file_name.replace("ogic_exp_2.5_", "")).replace(".csv", "")
+                seismic_attack_title = "result_{}_{}".format(lver, seismic_attack_title)
+            if interlink_type:
+                seismic_attack_title = seismic_attack_title.replace("result_", "")
+                inter_name = "{}v{}".format(interlink_type_names[interlink_type], interlink_version)
+                seismic_attack_title = "result_{}_{}".format(inter_name, seismic_attack_title)
+            if legacy:
+                seismic_attack_title = "legacy_{}".format(seismic_attack_title)
+            if debug:
+                print("OK DEBUG")
+                seismic_attack_title = "debug_{}".format(seismic_attack_title)
+            if len(title_mod) > 0:
+                seismic_attack_title = "d{}_{}".format(title_mod, seismic_attack_title)
+
+            print("{} -- will save results on: {}".format(process_name, seismic_attack_title))
+
             print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
             # aca la idea es poner una función que lea datos sísmicos de un archivo y llamé a la otra función que hace
             # en serio el ataque
             seismic_data_file = seismic_data["file"]
-            tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model,
-                                          seismic_data_file)
+
+            tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model, seismic_data_file, save_in=seismic_attack_title)
             print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
 
         else:

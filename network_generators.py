@@ -291,15 +291,35 @@ def generate_coordinates(n, x_axis=1000, y_axis=1000):
     return x_coordinates, y_coordinates
 
 
-def generate_edges_to_add_random(number_of_edges_to_add, graph):
+def generate_edges_to_add_random(number_of_edges_to_add, graph, coord_dict, max_length=0):
 
     graph_complement = graph.complementer()
+    graph_complement.vs['name'] = graph.vs['name']
     edge_id_list_remove = []
     for i in range(len(graph.vs)):
-        id = graph_complement.get_eid(i, i)
-        edge_id_list_remove.append(id)
+        identity = graph_complement.get_eid(i, i)
+        edge_id_list_remove.append(identity)
     graph_complement.delete_edges(edge_id_list_remove)
-    new_edges_candidates = graph_complement.get_edgelist()
+    new_edges_candidates = []
+    if max_length > 0:
+        x = 0
+        y = 1
+        for edge in graph_complement.get_edgelist():
+            node_1 = graph_complement.vs[edge[0]]['name']
+            node_2 = graph_complement.vs[edge[1]]['name']
+            x1 = coord_dict[node_1][x]
+            y1 = coord_dict[node_1][y]
+            x2 = coord_dict[node_2][x]
+            y2 = coord_dict[node_2][y]
+
+            edge_length = math.sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
+            if 0 < edge_length <= max_length:
+                new_edges_candidates.append(edge)
+
+        print("number of candidates: {}".format(len(new_edges_candidates)))
+    else:
+        new_edges_candidates = graph_complement.get_edgelist()
+
     index_list = random.sample(range(len(new_edges_candidates) - 1), number_of_edges_to_add)
 
     final_edge_list = []
@@ -488,7 +508,6 @@ def save_edges_to_csv(edge_list, x_coordinates, y_coordinates, pg_exponent, n_de
         full_directory = os.path.join(path, strategy, title)
 
     print("Saving new edges in: {}".format(full_directory))
-
     with open(full_directory, 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
         for i in range(len(edge_list)):

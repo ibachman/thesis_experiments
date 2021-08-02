@@ -21,7 +21,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
 
 
 def single_network_attack_new(interdependent_network, network_to_attack, file_name, iter_number, process_name="", nodes_to_attack=None):
-    if not nodes_to_attack:
+    if nodes_to_attack is None:
         print(" -> {} -- Results path: {}".format(process_name, file_name))
     physical_network = interdependent_network.get_phys()
     phys_suppliers = interdependent_network.get_phys_providers()
@@ -310,7 +310,7 @@ def soil_value(vs30):
 
 
 def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, version, model, seismic_data_file,
-                    max_radius_km=400, centers=None, exp=2.5):
+                    max_radius_km=400, centers=None, exp=2.5, save_in=None):
 
     # get physical network
     physical_net = interdependent_network.get_phys()
@@ -337,13 +337,13 @@ def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, ve
         for center in centers:
             x = center["x"]
             y = center["y"]
-            result_dict = probabilistic_localized_attack(interdependent_network, x, y, max_radius,
-                                           seismic_probability_function_chile,
-                                           seismic_event)
+            result_dict = probabilistic_localized_attack(interdependent_network, x, y, max_radius, seismic_probability_function_chile, seismic_event)
             contents.append(result_dict)
+    if save_in:
+        file_name = save_in
+    else:
+        file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep, attack_type="seismic", version=version, model=model)
 
-    file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep,
-                                    attack_type="seismic", version=version, model=model)
     path = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(path, "test_results")
     path = os.path.join(path, "seismic")
@@ -367,10 +367,7 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
     # probability function determines whether a node is removed or not given the conditions
     # param contains other necessary info for the probability_function to work
     physical_network = interdependent_network.get_phys()
-    phys_suppliers = interdependent_network.get_phys_providers()
-    logic_network = interdependent_network.get_as()
-    logic_suppliers = interdependent_network.get_as_providers()
-    interdep_graph = interdependent_network.get_interlinks()
+
     param["epicenter"] = {"x": x_center, "y": y_center}
 
     # Get nodes to attack
@@ -385,17 +382,13 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
             # call probability function to know whether to remove the node or not
             if probability_function(vertex, param):
                 nodes_to_attack.append(vertex["name"])
-    # Create copy from original - why tho?
-    graph_copy = InterdependentGraph()
-    graph_copy.create_from_graph(logic_network, logic_suppliers, physical_network, phys_suppliers, interdep_graph)
 
-    # attack:
-    graph_copy.attack_nodes(nodes_to_attack)
-    g_l = graph_copy.get_ratio_of_funtional_nodes_in_AS_network()
     aux_str = "["
     for n in nodes_to_attack:
         aux_str += "{}.".format(n)
     aux_str = aux_str[0:(len(aux_str) - 1)] + "]"
+
+    g_l = single_network_attack_new(interdependent_network, "", "", 0, nodes_to_attack=nodes_to_attack)
 
     result_dict = {"x_center": x_center,
                    "y_center": y_center,
@@ -408,7 +401,7 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
     return result_dict
 
 
-def seismic_probability_function_chile(vertex, params):
+def seismic_probability_function_chile(vertex, params, mode="linear"):
     vertex_x = vertex["x_coordinate"]
     vertex_y = vertex["y_coordinate"]
     epicenter_x = params["epicenter"]["x"]
@@ -421,12 +414,29 @@ def seismic_probability_function_chile(vertex, params):
     H = params["depth"]
     Feve = params["event_type"]
 
-
-    pga_value = get_chile_pga(Mw,H,Feve, R, St_t, Vs30) #(Mw, H, Feve, R, St_t, Vs30)
+    pga_value = get_chile_pga(Mw, H, Feve, R, St_t, Vs30) #(Mw, H, Feve, R, St_t, Vs30)
+    # DEBUG
+    debug = False
+    if debug:
+        print("------------- Feve: {}".format(Feve))
+        aux_Mw = 0.8
+        pga_list = {}
+        while aux_Mw < 10:
+            aux_pga = get_chile_pga(aux_Mw, H, Feve, R, St_t, Vs30)
+            pga_list[aux_Mw] = aux_pga
+            if aux_Mw < 1:
+                print("Mw {}, pga ratio: {}, pga {}".format(round(aux_Mw, 1), 1, round(pga_list[aux_Mw] * 10 ** 9, 1)))
+            else:
+                print("Mw {}, pga ratio: {}, pga {}".format(round(aux_Mw, 1), round(pga_list[aux_Mw] / pga_list[round(aux_Mw-1, 1)], 1), round(pga_list[aux_Mw] * 10 ** 9, 1)))
+            aux_Mw += 1
+        print("-------------")
 
     # Usar SHINDO scale para las probabilidades
     # notar que la escala no va a ser lineal
-    failure_probability = shindo_scale_probability(pga_value)
+    if mode == "linear":
+        failure_probability = linear_shindo_scale_probability(pga_value)
+    else:
+        failure_probability = shindo_scale_probability(pga_value)
 
     return random.uniform(0, 1) <= failure_probability
 
@@ -438,20 +448,36 @@ def shindo_scale_probability(pga):
              #"1": (0.008, 0.025),
              #"2": (0.025, 0.08),
              #"3": (0.08,0.25),
-             "4": [(0.025, 0.80), (0.01, 0.1)], # delta = 0.55 -> 0.8 m/s => 10% damage probability
-             "5-": [(0.8, 1.4),(0.1,0.2)], # delta = 0.6 -> 1.4 m/s => 20% damage probability
-             "5+": [(1.4, 2.5),(0.2,0.5)], # delta = 1.1 -> 2.5 m/s => 50% damage probability
-             "6-": [(2.5, 3.15),(0.5,0.85)], # delta = 0.65 -> 3.15 m/s => 85% damage probability
-             "6+": [(3.15, 4),(0.85,1)], #delta = 0.85 -> 4 m/s => 100% damage probability
-             "7": [(4, float('inf')),(1,1)]}
+             "4": [(0.25, 0.80), (0.01, 0.1)], # delta = 0.55 -> 0.8 m/s => 10% damage probability
+             "5-": [(0.8, 1.4), (0.1, 0.2)], # delta = 0.6 -> 1.4 m/s => 20% damage probability
+             "5+": [(1.4, 2.5), (0.2, 0.5)], # delta = 1.1 -> 2.5 m/s => 50% damage probability
+             "6-": [(2.5, 3.15), (0.5, 0.85)], # delta = 0.65 -> 3.15 m/s => 85% damage probability
+             "6+": [(3.15, 4), (0.85, 1)], # delta = 0.85 -> 4 m/s => 100% damage probability
+             "7": [(4, float('inf')), (1, 1)]}
 
     for tier_number in tiers:
         if tiers[tier_number][0][0] <= ms_pga < tiers[tier_number][0][1]:
-            point_1 = (tiers[tier_number][0][0],tiers[tier_number][1][0])
-            point_2 = (tiers[tier_number][0][1],tiers[tier_number][1][1])
+            point_1 = (tiers[tier_number][0][0], tiers[tier_number][1][0])
+            point_2 = (tiers[tier_number][0][1], tiers[tier_number][1][1])
             prob_value = two_point_line_eq(ms_pga, point_1, point_2)
             return prob_value
     return 0
+
+
+def linear_shindo_scale_probability(pga):
+    gravity_acceleration = 9.8
+    ms_pga = pga * gravity_acceleration
+    # print("-------------")
+    # print("pga: {}, ms_pga: {}".format(pga, ms_pga))
+    if ms_pga > 4:
+        return 1
+    else:
+        prob_value = two_point_line_eq(ms_pga, (0.08, 0.0), (4.0, 1.0))
+        if prob_value < 0:
+            prob_value = 0
+        # print("---> failure prob: {}".format(prob_value))
+        # print("-------------")
+        return prob_value
 
 
 def two_point_line_eq(x, point_1, point_2):
@@ -560,7 +586,7 @@ def network_with_deleted_nodes(network, nodes_to_delete):
 def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index, physical_graph, phys_providers,
                       inter_roseta_phys, inter_roseta_logic, phys_nodes_to_delete, physical_roseta, logic_roseta,
                       logic_graph, logic_providers, interlink_graph, inner_inter_roseta, logic_nodes_to_delete=[],
-                      verbose=False):
+                      verbose=False, find=[]):
     n_phys_nodes = len(phys_name_by_index)
     n_logic_nodes = len(logic_name_by_index)
     n_inter_nodes = len(intern_name_by_index)
@@ -583,6 +609,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
     amp = 10000000
     while True:
         # if there are no more nodes to delete, i.e, the network has stabilized, then stop
+
         if phys_nodes_to_delete == current_phys_nodes_to_delete and\
                 logic_nodes_to_delete == current_logic_nodes_to_delete:
             break
@@ -600,6 +627,10 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
 
         for lnode in logic_nodes_to_delete:
             logic_input[lnode] = False
+
+        for find_node in find:
+            if not logic_input[logic_roseta[find_node]]:
+                return True
 
         timestamp_3 = time.time()
         delta_2 = (timestamp_3 - timestamp_2) * amp
@@ -638,6 +669,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         while True:
             logic_input_old = logic_input.copy()
             logic_input = get_physical_nodes_lost_by_cc(logic_graph, logic_input, logic_providers, logic_roseta)
+
             if logic_input == logic_input_old:
                 del logic_input_old
                 break
@@ -690,6 +722,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         all_delta[8].append(delta_9)
 
         current_phys_nodes_to_delete = list(current_phys_nodes_to_delete_dict)
+
         current_logic_nodes_to_delete = list(current_logic_nodes_to_delete_dict)
 
         timestamp_11 = time.time()
@@ -703,6 +736,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         for i in range(10):
             print("--- Average time in segment {}: {}".format(i+1, numpy.average(all_delta[i])))
     #gc.collect()
+
     return logic_nodes_to_delete
 
 
