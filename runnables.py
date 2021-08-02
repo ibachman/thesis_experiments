@@ -275,7 +275,6 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             else:
                 path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", physical_attack_title)
             print("{} -- will save results on: {}".format(process_name, path))
-            exit(44)
             tests_library.single_network_attack(network_system, "physical", path, iter_number, "NEW",
                                                 process_name=process_name)
 
