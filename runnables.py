@@ -15,7 +15,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     title_mod = ""
     #########################
-    capped_random = "distance"
+    capped_random = "local_hubs"
     #########################
 
     attack_logic = 'logic' in attack_types
