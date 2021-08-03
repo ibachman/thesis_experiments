@@ -4,6 +4,7 @@ import numpy as np
 from interdependent_network_library import *
 import powerlaw
 import operator
+import datetime
 __author__ = 'ivana'
 
 
@@ -291,7 +292,24 @@ def generate_coordinates(n, x_axis=1000, y_axis=1000):
     return x_coordinates, y_coordinates
 
 
-def generate_edges_to_add_random(number_of_edges_to_add, graph, coord_dict, max_length=0):
+def cost_by_length(coord_dict, edges):
+    cost = 0
+    x = 0
+    y = 1
+
+    for edge in edges:
+        node_1 = edge[0]
+        node_2 = edge[1]
+        x1 = coord_dict[node_1][x]
+        y1 = coord_dict[node_1][y]
+        x2 = coord_dict[node_2][x]
+        y2 = coord_dict[node_2][y]
+        cost += math.sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
+
+    return cost
+
+
+def generate_edges_to_add_random(number_of_edges_to_add, graph, coord_dict, max_length=0, max_cost=0):
 
     graph_complement = graph.complementer()
     graph_complement.vs['name'] = graph.vs['name']
@@ -301,7 +319,9 @@ def generate_edges_to_add_random(number_of_edges_to_add, graph, coord_dict, max_
         edge_id_list_remove.append(identity)
     graph_complement.delete_edges(edge_id_list_remove)
     new_edges_candidates = []
+    new_edges_candidates_ids = []
     if max_length > 0:
+        new_edges_candidates = {}
         x = 0
         y = 1
         for edge in graph_complement.get_edgelist():
@@ -313,22 +333,41 @@ def generate_edges_to_add_random(number_of_edges_to_add, graph, coord_dict, max_
             y2 = coord_dict[node_2][y]
 
             edge_length = math.sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
-            if 0 < edge_length <= max_length:
-                new_edges_candidates.append(edge)
 
-        print("number of candidates: {}".format(len(new_edges_candidates)))
+            if 0 < edge_length <= max_length:
+                edge_id = graph_complement.get_eid(edge[0], edge[1])
+                new_edges_candidates[edge_id] = edge
+                new_edges_candidates_ids.append(edge_id)
+        index_list = random.sample(new_edges_candidates_ids, number_of_edges_to_add)
     else:
         new_edges_candidates = graph_complement.get_edgelist()
-
-    index_list = random.sample(range(len(new_edges_candidates) - 1), number_of_edges_to_add)
-
+        index_list = random.sample(range(len(new_edges_candidates) - 1), number_of_edges_to_add)
     final_edge_list = []
+
     for k in index_list:
         i = new_edges_candidates[k][0]
         j = new_edges_candidates[k][1]
         i_name = graph.vs['name'][i]
         j_name = graph.vs['name'][j]
         final_edge_list.append((i_name, j_name))
+
+    if max_cost > 0:
+        print(datetime.datetime.now())
+        cost = cost_by_length(coord_dict, final_edge_list)
+        while cost > max_cost:
+            index_list = random.sample(new_edges_candidates_ids, number_of_edges_to_add)
+            final_edge_list = []
+            for k in index_list:
+                i = new_edges_candidates[k][0]
+                j = new_edges_candidates[k][1]
+                i_name = graph.vs['name'][i]
+                j_name = graph.vs['name'][j]
+                final_edge_list.append((i_name, j_name))
+            cost = cost_by_length(coord_dict, final_edge_list)
+            print("---- {}".format(cost))
+        print("cost: {}".format(cost))
+        print(datetime.datetime.now())
+
     return final_edge_list
 
 

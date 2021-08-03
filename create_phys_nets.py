@@ -601,7 +601,7 @@ def number_of_distinct_edges(edge_list):
     return len(list(edge_dict.keys()))
 
 
-def create_extra_edges(model, strategy, number=640, max_length=0, max_length_from="", spaces=[]):
+def create_extra_edges(model, strategy, number=640, max_length=0, max_length_from="", spaces=[], max_cost=0):
     t_mod = ""
     if number != 640:
         t_mod = str(number)
@@ -627,7 +627,7 @@ def create_extra_edges(model, strategy, number=640, max_length=0, max_length_fro
                 new_edges = network_generators.generate_edges_to_add_distance_hubs(graph1, coord_dict, 97, number)
                 network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="local_hubs", title_mod=t_mod)
             elif strategy == "random":
-                new_edges = network_generators.generate_edges_to_add_random(number, graph1, coord_dict, max_length=max_length)
+                new_edges = network_generators.generate_edges_to_add_random(number, graph1, coord_dict, max_length=max_length, max_cost=max_cost)
                 network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="random", title_mod=t_mod)
             elif strategy == "degree":
                 new_edges = network_generators.generate_edges_to_add_degree(graph1, 97, number)
@@ -884,12 +884,35 @@ target_interlink_file_name = "networks/interdependencies/provider_priority/og-de
 
 def create_extra_edges_cap_random_length(strategy):
     strategies = [strategy]#, "local_hubs", "degree", "random"]
-    models = ["RNG", "GG", "5NN"]
+    models = ["5NN", "RNG", "GG"]
     spaces = [[20, 500], [100, 100]]
     for strategy in strategies:
         for model in models:
             for s in spaces:
                 print("--------- {}".format(strategy))
                 mean, std = get_max_edge_length_for_strategy(strategy, [s], [model])
-                create_extra_edges(model, "random", number=640, max_length=np.ceil(mean), spaces=[s], max_length_from=strategy)
+                mcost = 0
+                div = 2
+                if model == "RNG" and s == [20, 500]:
+                    mcost = 1400
+                    div = 1.9
+                elif model == "RNG" and s == [100, 100]:
+                    mcost = 1300
+                    div = 1.9
+                if model == "GG" and s == [20, 500]:
+                    mcost = 1500
+                    div = 1.85
+                elif model == "GG" and s == [100, 100]:
+                    mcost = 1400
+                    div = 1.91
+                if model == "5NN" and s == [20, 500]:
+                    mcost = 1600
+                    div = 1.845
+                elif model == "5NN" and s == [100, 100]:
+                    mcost = 1550
+                    div = 1.82
 
+                create_extra_edges(model, "random", number=640, max_length=mean/div, spaces=[s], max_length_from=strategy, max_cost=mcost)
+
+
+#create_extra_edges_cap_random_length("distance")
