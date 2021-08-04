@@ -15,7 +15,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     title_mod = ""
     #########################
-    capped_random = "cap0.5"
+    capped_random = "cap0.25"
     #########################
 
     attack_logic = 'logic' in attack_types
