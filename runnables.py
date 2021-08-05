@@ -15,7 +15,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
     #########################
     title_mod = ""
     #########################
-    capped_random = "cap0.15"
+    capped_random = "cap0.01"
     #########################
 
     attack_logic = 'logic' in attack_types
@@ -326,14 +326,14 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             if len(title_mod) > 0:
                 seismic_attack_title = "d{}_{}".format(title_mod, seismic_attack_title)
 
-            print("{} -- will save results on: {}".format(process_name, seismic_attack_title))
+            print("{} -- will save results on: {}/{}".format(process_name, sub_dir,seismic_attack_title))
 
             print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
             # aca la idea es poner una función que lea datos sísmicos de un archivo y llamé a la otra función que hace
             # en serio el ataque
             seismic_data_file = seismic_data["file"]
 
-            tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model, seismic_data_file, save_in=seismic_attack_title)
+            tests_library.seismic_attacks(network_system, x_coordinate, y_coordinate, n_inter, version, model, seismic_data_file, save_in=seismic_attack_title, subdir=sub_dir)
             print("{} -- seismic attack test {}".format(process_name, datetime.datetime.now()))
 
         else:
