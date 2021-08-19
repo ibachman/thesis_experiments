@@ -2,7 +2,7 @@
 
 #SBATCH -J niclabs
 #SBATCH --cpus-per-task=1
-#SBATCH --ntasks=10
+#SBATCH --ntasks=4
 #SBATCH -p general
 #SBATCH --output=nt_log_%A_%a.out
 #SBATCH --mail-user=ivana@niclabs.cl (--mail-user=ivana@niclabs.cl)
