@@ -310,7 +310,7 @@ def soil_value(vs30):
 
 
 def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, version, model, seismic_data_file,
-                    max_radius_km=400, centers=None, exp=2.5, save_in=None):
+                    max_radius_km=400, centers=None, exp=2.5, save_in=None, subdir="simple_graphs"):
 
     # get physical network
     physical_net = interdependent_network.get_phys()
@@ -345,8 +345,8 @@ def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, ve
         file_name = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=ndep, attack_type="seismic", version=version, model=model)
 
     path = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(path, "test_results")
-    path = os.path.join(path, "seismic")
+    path = os.path.join(path, "test_results", "seismic", subdir)
+
     save_as_csv(path, file_name, contents)
 
 
@@ -598,6 +598,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
     current_logic_nodes_to_delete = []
 
     for pnode in phys_nodes_to_delete:
+
         phys_input[physical_roseta[pnode]] = False
 
     for lnode in logic_nodes_to_delete:

@@ -1,0 +1,10 @@
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|}
+\hline
+strategy/model & RNG & GG & 5NN\\ \hline
+random & 33555.28 (678.25) & 33542.83 (552.82) & 33659.34 (641.82)\\ \hline
+local_hubs & 4830.97 (87.96) & 5230.64 (409.03) & 5260.35 (148.66)\\ \hline
+distance_aux & 1295.18 (16.96) & 1379.3 (20.17) & 1530.73 (16.75)\\ \hline
+degree_aux & 33474.73 (443.23) & 34003.93 (656.48) & 33613.86 (619.23)\\ \hline
+\end{tabular}
+\end{table}
