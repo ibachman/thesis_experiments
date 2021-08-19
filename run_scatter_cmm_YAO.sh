@@ -13,4 +13,4 @@ ml Python/3.8.2
 
 pip3 install -r requirements.txt
 
-srun python3 -u data_proc/thesis_figures.py 5NN simple_graphs
+srun python3 -u data_proc/thesis_figures.py YAO simple_graphs
