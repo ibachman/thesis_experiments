@@ -1,10 +1,13 @@
-#import data_proc.common_plots as cp
-#import data_proc.plotting as pt
-#import data_proc.LA_vs_RA_plots as vs
-import common_plots as cp
-import plotting as pt
-import LA_vs_RA_plots as vs
+import os
 import sys
+sys.path.append(os.getcwd())
+import data_proc.common_plots as cp
+import data_proc.plotting as pt
+import data_proc.LA_vs_RA_plots as vs
+#import common_plots as cp
+#import plotting as pt
+#import LA_vs_RA_plots as vs
+
 
 
 ppv = 3
