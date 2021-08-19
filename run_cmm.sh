@@ -1,9 +1,10 @@
 #!/bin/bash
 
 #SBATCH -J niclabs
-#SBATCH -c 40
+#SBATCH -c 10
 #SBATCH -p general
-#SBATCH --output=exp_server_%A.out
+#SBATCH --output=log_%A.out
+#SBATCH -e err_%A.err
 #SBATCH --mail-user=ivana@niclabs.cl (--mail-user=ivana@niclabs.cl)
 #SBATCH --mail-type=ALL
 
@@ -17,4 +18,4 @@ mkdir -p test_results/seismic
 
 pip3 install -r requirements.txt
 
-srun python3 -u job_manager.py -g jobs-api.felipequintanilla.cl -m cmm -w 40
+srun python3 -u job_manager.py -g jobs-api.felipequintanilla.cl -m cmm -w 10
