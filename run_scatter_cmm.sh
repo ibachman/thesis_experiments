@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #SBATCH -J niclabs
-#SBATCH --cpus-per-task=1
-#SBATCH --ntasks=4
+#SBATCH --ntasks=1
+#SBATCH --array=1-4
+#SBATCH --mem-per-cpu=1000M
 #SBATCH -p general
 #SBATCH --output=nt_log_%A_%a.out
 #SBATCH --mail-user=ivana@niclabs.cl (--mail-user=ivana@niclabs.cl)
