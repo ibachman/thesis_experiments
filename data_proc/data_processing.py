@@ -1232,7 +1232,7 @@ def gl_after_removal_full_attack(node_list, model, version, ndep, geometry, stra
 
 
 def is_removed_during_attack(find, node_list, model, version, ndep, geometry, strategy="simple graphs", lv=1):
-    path = "/Users/ivana/PycharmProjects/thesis_experiments/networks/"
+    path = os.path.join((run_data())["root_path"], "networks")
     exp = "2.5"
     ppv = 3
     geometry = geometry.split("x")
