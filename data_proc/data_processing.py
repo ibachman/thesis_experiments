@@ -1,12 +1,12 @@
 import csv
 import numpy
 import networkx as nx
-from interdependent_network_library import csv_title_generator
+from ../interdependent_network_library import csv_title_generator
 import tests_library as tl
 import os
 import random
 from create_phys_nets import set_graph_from_csv
-import interdependent_network_library
+import ../interdependent_network_library
 
 
 def data_at_x_percent_damage(node_damage_fraction, number_of_nodes, path, geometry, exp, attack, system_name, legacy=False, lv=None):
