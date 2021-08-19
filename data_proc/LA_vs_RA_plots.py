@@ -1,5 +1,7 @@
-import data_proc.data_processing as dp
-import data_proc.plotting as pt
+#import data_proc.data_processing as dp
+#import data_proc.plotting as pt
+import data_processing as dp
+import plotting as pt
 import numpy as np
 
 

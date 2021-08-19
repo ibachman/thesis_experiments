@@ -1,7 +1,8 @@
 # libraries
 import matplotlib.pyplot as plt
 import numpy as np
-import data_proc.data_processing as dp
+#import data_proc.data_processing as dp
+import data_processing as dp
 import csv
 import os
 import datetime
