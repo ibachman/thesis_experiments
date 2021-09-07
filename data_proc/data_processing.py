@@ -478,6 +478,7 @@ def get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=1)
     file_name = "result_ppv3_lv{}_{}_exp_2.5_ndep_{}_att_seismic_v{}_m_{}.csv".format(lv, geometry, ndep, version, model)
     headline = True
     with open(os.path.join(paths[strategy], file_name)) as csv_file:
+        #print("file: {}".format(os.path.join(paths[strategy], file_name)))
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
             if headline:
@@ -1288,10 +1289,9 @@ def get_all_logical_nodes_lost_from_original_pnode_list(node_list, model, versio
     return failed_nodes_2
 
 
-def read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=False, lv=-1):
+def read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=False, lv=-1, is_seismic=False):
     strategy_n = strategy.replace(" ", "_")
-    f_name = "scatter_plot_data_model_{}_ndep_{}_geometry_{}_radius_{}_st_{}.csv".format(model, ndep, geometry,
-                                                                                          radius, strategy)
+    f_name = "scatter_plot_data_model_{}_ndep_{}_geometry_{}_radius_{}_st_{}.csv".format(model, ndep, geometry, radius, strategy)
     if legacy:
         f_name = "legacy_{}".format(f_name)
     elif lv > 0:
@@ -1301,8 +1301,11 @@ def read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=False
             "isl50": [],
             "logic damage": [],
             "physic damage": []}
-    file_path = os.path.join((run_data())["scatter_plot_path"][strategy], f_name)
-
+    if is_seismic:
+        file_path = os.path.join((run_data())["scatter_plot_path"][strategy], "seismic", f_name)
+    else:
+        file_path = os.path.join((run_data())["scatter_plot_path"][strategy], f_name)
+    #print(file_path)
     with open(file_path) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:

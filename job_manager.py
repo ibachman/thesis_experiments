@@ -11,7 +11,10 @@ def run_forever_from_server(server_name, number_of_workers, machine_name, is_par
     while True:
         start_time = time.time()
         print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
-        no_more_jobs = cr.run_batch_from_server(server_name, number_of_workers, machine_name, parallel=is_parallel,
+        if post_process_scatter:
+            no_more_jobs = cr.run_post_process_scatter_from_server(get_lines_from, machine_name)
+        else:
+            no_more_jobs = cr.run_batch_from_server(server_name, number_of_workers, machine_name, parallel=is_parallel,
                                                 check_abandoned=check_abandoned)
         print("-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-")
         finish_time = time.time()
@@ -32,7 +35,10 @@ def run_from_server_for(server_name, number_of_workers, machine_name, max_time):
     all_times = []
     while True:
         start_time = time.time()
-        cr.run_batch_from_server(server_name, number_of_workers, machine_name)
+        if post_process_scatter:
+            cr.run_post_process_scatter_from_server(get_lines_from, machine_name)
+        else:
+            cr.run_batch_from_server(server_name, number_of_workers, machine_name)
         finish_time = time.time()
         total_time = finish_time - start_time
         all_times.append(total_time)
@@ -69,6 +75,8 @@ if __name__ == "__main__":
                                  help='time limit to run things', default=None)
     argument_parser.add_argument('-nt', '--nothread', action='store_true', help='do not use thread, set --workers to 1')
     argument_parser.add_argument('-ca', '--checkabandoned', action='store_true', help='check abandoned jobs on server')
+
+    argument_parser.add_argument('-pps', '--postprocscatter', action='store_true', help='check abandoned jobs on server')
     args = argument_parser.parse_args()
     # arguments
     n_workers = args.workers
@@ -79,6 +87,7 @@ if __name__ == "__main__":
     max_time = args.timelimit
     no_thread = args.nothread
     check_abandoned = args.checkabandoned
+    post_process_scatter = args.postprocscatter
 
     # use only a set of lines as commands
     if file_line > 0:

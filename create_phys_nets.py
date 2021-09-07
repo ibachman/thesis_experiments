@@ -605,7 +605,7 @@ def create_extra_edges(model, strategy, number=640, max_length=0, max_length_fro
     t_mod = ""
     if number != 640:
         t_mod = str(number)
-    if max_length > 0:
+    if max_length != 0 or max_length is list:
         if len(t_mod) > 0:
             t_mod += "_"
         t_mod = "{}cl_{}".format(t_mod, max_length_from)
@@ -627,8 +627,13 @@ def create_extra_edges(model, strategy, number=640, max_length=0, max_length_fro
                 new_edges = network_generators.generate_edges_to_add_distance_hubs(graph1, coord_dict, 97, number)
                 network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="local_hubs", title_mod=t_mod)
             elif strategy == "random":
-                new_edges = network_generators.generate_edges_to_add_random(number, graph1, coord_dict, max_length=max_length, max_cost=max_cost)
-                network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="random", title_mod=t_mod)
+
+                if type(max_length) is list:
+                    new_edges = network_generators.generate_edges_to_add_random(number, graph1, coord_dict, max_length=max_length[v-1], max_cost=max_cost)
+                    network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="random", title_mod=t_mod)
+                else:
+                    new_edges = network_generators.generate_edges_to_add_random(number, graph1, coord_dict, max_length=max_length, max_cost=max_cost)
+                    network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="random", title_mod=t_mod)
             elif strategy == "degree":
                 new_edges = network_generators.generate_edges_to_add_degree(graph1, 97, number)
                 network_generators.save_edges_to_csv(new_edges, s[0], s[1], 2.5, version=v, model=model, strategy="degree_aux", title_mod=t_mod)
@@ -672,7 +677,7 @@ def get_max_edge_length_for_strategy(strategy, spaces, models):
                 #print("Max edge length for {} strategy: {}, s={}, v={}, m={}".format(strategy, max_extra_edge_length, s, v, model))
                 #print("Min edge length for {} strategy: {}, s={}, v={}, m={}".format(strategy, min_extra_edge_length, s, v, model))
             print("{} {} Average max: {} ({})".format(model, s, np.mean(maxes), np.std(maxes)))
-            return np.mean(maxes), np.std(maxes)
+            return np.mean(maxes), np.std(maxes), maxes
 
 
 def check_if_done(x_coordinate, y_coordinate, exp, strategy, n_inter, version, model, legacy=False):
@@ -882,37 +887,91 @@ target_interlink_file_name = "networks/interdependencies/provider_priority/og-de
 
 #create_extra_edges('RNG', "random", number=640, max_length=1)
 
-def create_extra_edges_cap_random_length(strategy):
+def create_extra_edges_cap_random_length(strategy=None, length=0.0):
     strategies = [strategy]#, "local_hubs", "degree", "random"]
-    models = ["5NN", "RNG", "GG"]
-    spaces = [[20, 500], [100, 100]]
-    for strategy in strategies:
+    models = ["GG", "5NN", "RNG"]
+    spaces = [[20, 500], [100, 100]]#
+    if strategy:
+        for strategy in strategies:
+            for model in models:
+                for s in spaces:
+                    print("--------- {}".format(strategy))
+                    mean, std, _ = get_max_edge_length_for_strategy(strategy, [s], [model])
+                    mcost = 0
+                    div = 2
+                    if model == "RNG" and s == [20, 500]:
+                        mcost = 5100#1400
+                        div = 2.06
+                    elif model == "RNG" and s == [100, 100]:
+                        mcost = 4880#1300
+                        div = 1.97
+                    if model == "GG" and s == [20, 500]:
+                        mcost = 5400#1500
+                        div = 1.932
+                    elif model == "GG" and s == [100, 100]:
+                        mcost = 5350#1400
+                        div = 2
+                    if model == "5NN" and s == [20, 500]:
+                        mcost = 5650#1600
+                        div = 1.86
+                    elif model == "5NN" and s == [100, 100]:
+                        mcost = 5300#1550
+                        div = 1.82
+
+                    create_extra_edges(model, "random", number=640, max_length=mean/div, spaces=[s], max_length_from=strategy, max_cost=mcost)
+    elif 1 >= length > 0:
+        strategy = 'random'
+
         for model in models:
             for s in spaces:
-                print("--------- {}".format(strategy))
-                mean, std = get_max_edge_length_for_strategy(strategy, [s], [model])
-                mcost = 0
-                div = 2
-                if model == "RNG" and s == [20, 500]:
-                    mcost = 1400
-                    div = 1.9
-                elif model == "RNG" and s == [100, 100]:
-                    mcost = 1300
-                    div = 1.9
-                if model == "GG" and s == [20, 500]:
-                    mcost = 1500
-                    div = 1.85
-                elif model == "GG" and s == [100, 100]:
-                    mcost = 1400
-                    div = 1.91
-                if model == "5NN" and s == [20, 500]:
-                    mcost = 1600
-                    div = 1.845
-                elif model == "5NN" and s == [100, 100]:
-                    mcost = 1550
-                    div = 1.82
+                if length == 0.01:
+                    mean, std, maxes = get_max_edge_length_for_strategy("distance", [s], [model])
+                elif length == 0.05:
+                    mean, std, maxes = get_max_edge_length_for_strategy("local_hubs", [s], [model])
+                elif length == 1.0:
+                    maxes = [20000 for i in range(10)]
+                else:
+                    mean, std, maxes = get_max_edge_length_for_strategy(strategy, [s], [model])
+                    maxes = [l * length for l in maxes]
 
-                create_extra_edges(model, "random", number=640, max_length=mean/div, spaces=[s], max_length_from=strategy, max_cost=mcost)
+                print(maxes)
+                create_extra_edges(model, "random", number=640, max_length=maxes, spaces=[s], max_length_from="cap{}".format(length))
 
 
-#create_extra_edges_cap_random_length("distance")
+def load_edges_as_list(edges_path):
+    edge_list = []
+    with open(edges_path, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', quotechar=',')
+        for row in reader:
+            u = row[0]
+            v = row[1]
+            edge_list.append((u, v))
+
+    return edge_list
+
+
+def check_distinct_edges(strategy, model):
+    print("---")
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    strategy_paths = {"random": os.path.join(base_path, "networks", "physical_networks", "extra_edges", "random"),
+                        #"degree": os.path.join(base_path, "networks", "physical_networks", "extra_edges", "degree"),
+                        #"distance": os.path.join(base_path, "networks", "physical_networks", "extra_edges", "distance"),
+                        "local_hubs": os.path.join(base_path, "networks", "physical_networks", "extra_edges",
+                                                   "local_hubs"),
+                        "distance_aux": os.path.join(base_path, "networks", "physical_networks", "extra_edges",
+                                                     "distance_aux"),
+                        "degree_aux": os.path.join(base_path, "networks", "physical_networks", "extra_edges",
+                                                   "degree_aux")}
+    for version in range(1, 11):
+        edge_list = load_edges_as_list(os.path.join(strategy_paths[strategy], "candidates_100x100_exp_2.5_v{}_m_{}.csv".format(version, model)))
+        edge_set = set()
+        for edge in edge_list:
+            # put minor id first
+            node_1 = int(edge[0].replace("p", ""))
+            node_2 = int(edge[1].replace("p", ""))
+            new_edge = ("p{}".format(min(node_1, node_2)),"p{}".format(max(node_1, node_2)))
+            edge_set.add(new_edge)
+        print(len(list(edge_set)))
+#check_distinct_edges("local_hubs", "RNG")
+
+#create_extra_edges_cap_random_length(strategy=None, length=1.0)

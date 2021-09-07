@@ -5,6 +5,7 @@ import argparse
 import queue
 import connection_manager as cm
 import sys
+import data_proc.thesis_figures as pps
 
 
 def worker_run(worker_queue):
@@ -246,6 +247,30 @@ def run_batch_from_server(server_name, n_workers, machine_name, parallel=True, c
     else:
         print("[EMPTY ANSWER] No lines received")
         return True
+
+
+def run_post_process_scatter_from_server(server_name, machine_name):
+    server_connection = cm.ConnectionManager(server_name)
+    server_connection.set_machine_name(machine_name)
+    lines = server_connection.get_jobs_from_server(1)
+    n_lines = len(lines)
+    if n_lines > 0:
+        line = lines[0]["line"]
+        job_id = lines[0]["job_id"]
+        server_connection.set_job_doing(job_id)
+        split_line = line.split(" ")
+        model = split_line[0]
+        strategy = split_line[1]
+        imax = split_line[2]
+        if strategy == "simple_graphs":
+            strategy = strategy.replace("_", " ")
+        pps.pre_process_seismic_scatter_data(model, ndep=imax, strategy=[strategy])
+        server_connection.set_job_done(job_id)
+        return False
+    else:
+        print("[EMPTY ANSWER] No line received")
+        return True
+
 
 parser = argparse.ArgumentParser(description="Run experiments with the given variables")
 parser.add_argument('-ln', '--logicnodes', type=int, help='amount of nodes in the logic network')
