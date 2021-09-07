@@ -153,27 +153,26 @@ def get_hdla_tables(imax):
     #print(max(hdla_range["20x500"]["simple graphs"]['low']))
 
 
-def m():
-    st = ["local_hubs"]
-    for model in ["RNG", "GG", "GPA", "5NN", "YAO", "ER"]:
-        print("Using ndep: {}, for st: {}".format(5, st))
-        pre_process_LA_scatter_data(model, ndep=5, strategy=st)
-        print("Using ndep: {}, for st: {}".format(7, st))
-        pre_process_LA_scatter_data(model, ndep=7, strategy=st)
-        print("Using ndep: {}, for st: {}".format(10, st))
-        pre_process_LA_scatter_data(model, ndep=10, strategy=st)
+def get_scatter_plot_base_cap_7(save_figure=True, imax=3, models=["5NN", "GG", "RNG", "GPA", "YAO", "ER"], strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):
+    geometries = ["20x500"]
+    radius = 20
+    for s in geometries:
+        for st in strategies:
+            pt.scatter_plot(models, s, st, imax, radius, map="models", legacy=False, save_fig=save_figure, is_seismic=True, chapter=7)
 
 
-if len(sys.argv) < 3:
-    exit("Argv error")
-model = sys.argv[1]
-strategy = sys.argv[2]
-if strategy == "simple_graphs":
-    strategy = "simple graphs"
-
-pre_process_seismic_scatter_data(model, ndep=3, strategy=[strategy])#"distance_aux", "local_hubs", , "random", "simple graphs"
+def get_scatter_plot_magnitude_cap_7(save_figure=True, imax=3, models=["5NN", "GG", "RNG", "GPA", "YAO", "ER"], strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):
+    geometries = ["20x500"]
+    radius = 20
+    for s in geometries:
+        for st in strategies:
+            pt.scatter_plot(models, s, st, imax, radius, map="magnitude", legacy=False, save_fig=save_figure, is_seismic=True, chapter=7)
 
 
-#get_scatter_plot_find_cap_6(save_figure=True, imax=5, strategies=["distance_aux", "local_hubs", "degree_aux", "random"])
-#get_scatter_plot_find_cap_6(save_figure=True, imax=7, strategies=["distance_aux", "local_hubs", "degree_aux", "random"])
-#get_scatter_plot_find_cap_6(save_figure=True, imax=10, strategies=["distance_aux", "local_hubs", "degree_aux", "random"])
+def get_scatter_plot_find_cap_7(save_figure=True, imax=3, models=["RNG","5NN", "GG", "GPA", "YAO", "ER"], strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):
+    geometries = ["20x500"]
+    radius = 20
+    for s in geometries:
+        for st in strategies:
+            pt.scatter_plot(models, s, st, imax, radius, map="find", legacy=False, save_fig=save_figure, is_seismic=True, chapter=7)
+

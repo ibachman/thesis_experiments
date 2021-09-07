@@ -567,7 +567,7 @@ def double_plot_bar(labels, n_bars, plot_list, data_labels, ylabel, xlabel, titl
     plt.show()
 
 
-def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=False, lv=1, save_fig=False, return_data=False):
+def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=False, lv=1, save_fig=False, return_data=False, is_seismic=False, chapter=6):
     up_group = []
     low_group = []
     HDLA = {}
@@ -582,8 +582,7 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     model_map_shuffle_dict = {}
     for model in models:
 
-        gl_inv, nodes_removed, nr, vers, other_data = dp.correlated_damage_vs_nodes_removed(model, geometry, strategy,
-                                                                                            ndep, radius, legacy=legacy, lv=lv)
+        gl_inv, nodes_removed, nr, vers, other_data = dp.correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, radius, legacy=legacy, lv=lv, is_seismic=is_seismic)
 
         z = np.ones(len(nodes_removed))
         p = [x/2000 for x in nodes_removed]
@@ -619,29 +618,35 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             #          c=[custom_colors[model] for z in p],
             #           label=model)
 
-        if map == "magnitude" and strategy == "seismic":
+        if map == "magnitude" and is_seismic:
             print(model)
+
             title = "Magnitude of seismic attacks for {} based systems".format(model)
             magnitude = []
             p = []
             gl = []
+            Mw_high = []
+            Mw_low = []
             max_nodes_rem = 0
             mnr_mw = 0
             max_mw = 0
             mm_nrem  = 0
             for k in range(len(nr)):
-
                 gl.append(1-gl_inv[k])
                 magnitude.append(other_data["Mw"][k])
                 p.append(nodes_removed[k]/2000)
+                if nodes_removed[k]/2000 == 0:
+                    if 1-gl_inv[k] < 1:
+                        print("????")
 
             z = np.ones(len(p))
+            print("min (1-p): {}, max: {}".format(min(p),max(p)))
             plt.scatter(p, gl, s=[x * 10 for x in z], alpha=1, c=magnitude, cmap='viridis_r',
                         label=model)
 
         if map == "find":
             print(model)
-            data = dp.read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=legacy, lv=lv)
+            data = dp.read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=legacy, lv=lv, is_seismic=is_seismic)
             is_l50 = data["isl50"]
             title = "Is {} removed during the cascading failure? {}. {}".format(r'$u_L^b$', shape, model)
             if strategy != "simple graphs":
@@ -654,9 +659,9 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             p_aux_2 = []
             gl_aux_2 = []
 
-            if strategy == "seismic":
+            if is_seismic:
                 Mw_high = []
-                Mw_low = [0]
+                Mw_low = []
             for k in range(len(nr)):
                 if is_l50[k]:
                     color_list.append(color_true)
@@ -664,18 +669,18 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
                     #print("HDLA in model: {}, version: {}, {}".format(model, vers[k], center))
                     p_aux_1.append(p[k])
                     gl_aux_1.append(1-gl_inv[k])
-                    if strategy == "seismic":
+                    if is_seismic:
                         Mw_low.append(other_data["Mw"][k])
                 else:
                     color_list.append(color_false)
                     p_aux_2.append(p[k])
                     gl_aux_2.append(1 - gl_inv[k])
-                    if strategy == "seismic":
+                    if is_seismic:
                         Mw_high.append(other_data["Mw"][k])
                     if gl_inv[k] > 0.5:
                         print("mlem")
-            if strategy == "seismic":
-                print("HDLA Mw = ({},{})".format(min(Mw_low),max(Mw_low)))
+            if is_seismic:
+                print("HDLA Mw = ({},{})".format(min(Mw_low), max(Mw_low)))
                 print("Non-HDLA Mw = ({},{})".format(min(Mw_high), max(Mw_high)))
             size = 20
             if model == models[(len(models) - 1)]:
@@ -688,6 +693,12 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
                     ,edgecolor='black', linewidth=0.2)
                 ax.scatter(p_aux_2, gl_aux_2, s=[x * size for x in np.ones(len(p_aux_2))], alpha=1, c=color_false
                            ,edgecolor='gray', linewidth=0.1)
+
+            if p_aux_1 == []:
+                p_aux_1.append(-1)
+            if p_aux_2 == []:
+                p_aux_2.append(-1)
+            print("min (1-p): {}, max: {}".format(min(min(p_aux_1), min(p_aux_2)), max(max(p_aux_1), max(p_aux_2))))
             #ax.scatter(p, [(1 - x) for x in gl_inv], s=[x * 10 for x in z], alpha=1, c=color_l, label=model)
             print("Total points: {}, HDLA: {}".format(len(color_list), len([x for x in color_list if x == color_true])))
             HDLA[model] = len([x for x in color_list if x == color_true])
@@ -830,11 +841,20 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
         cbar = plt.colorbar()
         cbar.set_label(map, fontsize=15)
 
+    if is_seismic and map != "models" and map != "magnitude":
+        ax.legend(loc='center left', bbox_to_anchor=(0, 0.62))
+    elif is_seismic and map == "models":
+        plt.rc('legend', fontsize=9.5)
+        ax.legend(loc='center left', bbox_to_anchor=(0.01, 0.68))
+
     plt.ylim(-0.01, 1.02)
     if geometry == "20x500":
-        plt.xlim(0.039, 0.0905)
+        if not is_seismic:
+            plt.xlim(0.039, 0.0905)
+        else:
+            plt.xlim(-0.001, 0.106)
     else:
-        plt.xlim(0.046, 0.095)
+        plt.xlim(0.0455, 0.1465)
 
     plt.ylabel(r'$G_{L}$', fontsize=18)
     plt.xlabel('(1 - p)', fontsize=15)
@@ -849,10 +869,11 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     st_name = st_name[0]
     st_name = st_name.replace("_aux", "")
     space_fig_name = {"20x500": "ln", "100x100": "sq"}
-    fig_name = 'cap6_scatter_ndep_{}_{}_{}_{}.png'.format(ndep, map, st_name, space_fig_name[geometry])
-    print(fig_name)
+    fig_name = 'cap{}_scatter_ndep_{}_{}_{}_{}.png'.format(chapter,ndep, map, st_name, space_fig_name[geometry])
+
     if save_fig:
-        fig_path = '../figures/cap6/{}'.format(fig_name)
+        print(fig_name)
+        fig_path = '../figures/cap{}/{}'.format(chapter, fig_name)
         plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
     plt.title("")
 
