@@ -20,7 +20,7 @@ def single_network_attack(interdependent_network, network_to_attack, file_name, 
         return None
 
 
-def single_network_attack_new(interdependent_network, network_to_attack, file_name, iter_number, process_name="", nodes_to_attack=None):
+def single_network_attack_new(interdependent_network, network_to_attack, file_name, iter_number, process_name="", nodes_to_attack=None, find=None):
     if nodes_to_attack is None:
         print(" -> {} -- Results path: {}".format(process_name, file_name))
     physical_network = interdependent_network.get_phys()
@@ -64,6 +64,9 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
                                                         inter_roseta_logic, list_of_nodes_to_attack, physical_roseta,
                                                         logical_roseta, logic_network, logic_suppliers, interlink_graph,
                                                         inner_inter_roseta)
+                is_find_removed = False
+                if find != None:
+                    is_find_removed = logical_roseta[find] in logic_nodes_deleted
                 iteration_results[(i - 1)].append((n_logic - len(logic_nodes_deleted)) / n_logic)
 
                 net = network_with_deleted_nodes(logic_network, logic_nodes_deleted)
@@ -90,8 +93,11 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
                                                 inter_roseta_logic, nodes_to_attack, physical_roseta,
                                                 logical_roseta, logic_network, logic_suppliers, interlink_graph,
                                                 inner_inter_roseta)
+        is_find_removed = False
+        if find != None:
+            is_find_removed = logical_roseta[find] in logic_nodes_deleted
         gl = (n_logic - len(logic_nodes_deleted)) / n_logic
-        return gl
+        return gl, is_find_removed
 
 
 def single_network_attack_old(interdependent_network, network_to_attack, file_name, iter_number, process_name=""):
@@ -306,7 +312,9 @@ def uniform_centers_for_geography(width, length, amount):
 
 
 def soil_value(vs30):
-    return 0.322
+    soil_coef = -0.506
+    #print("Using Soil coef: {}".format(soil_coef))
+    return soil_coef#-0.322
 
 
 def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, version, model, seismic_data_file,
@@ -337,7 +345,7 @@ def seismic_attacks(interdependent_network, x_coordinate, y_coordinate, ndep, ve
         for center in centers:
             x = center["x"]
             y = center["y"]
-            result_dict = probabilistic_localized_attack(interdependent_network, x, y, max_radius, seismic_probability_function_chile, seismic_event)
+            result_dict = probabilistic_localized_attack(interdependent_network, x, y, max_radius, seismic_probability_function_chile, seismic_event, find='l50')
             contents.append(result_dict)
     if save_in:
         file_name = save_in
@@ -363,7 +371,7 @@ def load_seismic_data_from_file(seismic_data_file):
     return seismic_data_list
 
 
-def probabilistic_localized_attack(interdependent_network, x_center, y_center, max_radius, probability_function, param):
+def probabilistic_localized_attack(interdependent_network, x_center, y_center, max_radius, probability_function, param, find=None):
     # probability function determines whether a node is removed or not given the conditions
     # param contains other necessary info for the probability_function to work
     physical_network = interdependent_network.get_phys()
@@ -388,7 +396,7 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
         aux_str += "{}.".format(n)
     aux_str = aux_str[0:(len(aux_str) - 1)] + "]"
 
-    g_l = single_network_attack_new(interdependent_network, "", "", 0, nodes_to_attack=nodes_to_attack)
+    g_l, is_find_removed = single_network_attack_new(interdependent_network, "", "", 0, nodes_to_attack=nodes_to_attack, find=find)
 
     result_dict = {"x_center": x_center,
                    "y_center": y_center,
@@ -397,7 +405,8 @@ def probabilistic_localized_attack(interdependent_network, x_center, y_center, m
                    "magnitude": param["magnitude"],
                    "depth": param["depth"],
                    "event_type": param["event_type"],
-                   "nodes_removed": aux_str}
+                   "nodes_removed": aux_str,
+                   "is_{}".format(find): is_find_removed}
     return result_dict
 
 
@@ -414,7 +423,7 @@ def seismic_probability_function_chile(vertex, params, mode="linear"):
     H = params["depth"]
     Feve = params["event_type"]
 
-    pga_value = get_chile_pga(Mw, H, Feve, R, St_t, Vs30) #(Mw, H, Feve, R, St_t, Vs30)
+    pga_value = get_chile_pga2(Mw, H, Feve, R, St_t, Vs30) #(Mw, H, Feve, R, St_t, Vs30)
     # DEBUG
     debug = False
     if debug:
@@ -422,7 +431,7 @@ def seismic_probability_function_chile(vertex, params, mode="linear"):
         aux_Mw = 0.8
         pga_list = {}
         while aux_Mw < 10:
-            aux_pga = get_chile_pga(aux_Mw, H, Feve, R, St_t, Vs30)
+            aux_pga = get_chile_pga2(aux_Mw, H, Feve, R, St_t, Vs30)
             pga_list[aux_Mw] = aux_pga
             if aux_Mw < 1:
                 print("Mw {}, pga ratio: {}, pga {}".format(round(aux_Mw, 1), 1, round(pga_list[aux_Mw] * 10 ** 9, 1)))
@@ -465,14 +474,15 @@ def shindo_scale_probability(pga):
 
 
 def linear_shindo_scale_probability(pga):
-    gravity_acceleration = 9.8
+    #print("Using linear probabilities")
+    gravity_acceleration = 9.81
     ms_pga = pga * gravity_acceleration
     # print("-------------")
     # print("pga: {}, ms_pga: {}".format(pga, ms_pga))
     if ms_pga > 4:
         return 1
     else:
-        prob_value = two_point_line_eq(ms_pga, (0.08, 0.0), (4.0, 1.0))
+        prob_value = two_point_line_eq(ms_pga, (0.06, 0.0), (6.0, 1.0))
         if prob_value < 0:
             prob_value = 0
         # print("---> failure prob: {}".format(prob_value))
@@ -505,6 +515,44 @@ def get_chile_pga(Mw, H, Feve, R, St_t, Vs30):
     Mr = 5
     Vref = 1530  # 1530 m/s
 
+    if Feve == 0:
+        delta_fm = c9 * (Mw ** 2)
+    else:
+        delta_fm = delta_c1 + delta_c2 * Mw
+
+    Ff = c1 + c2*Mw + c8*(H - h0)*Feve + delta_fm
+
+    g = (c3 + c4*(Mw - Mr) + delta_c3*Feve)
+    R0 = ((1 - Feve)*c6 * 10**(c7*(Mw - Mr)))
+
+    Fd = g*numpy.log10(R + R0) + c5*R
+
+    Fs = St_t*numpy.log10((Vs30+0.00000000000001)/Vref)
+
+    log10_pga = Ff + Fd + Fs
+
+    pga = 10 ** log10_pga
+    return pga
+
+
+def get_chile_pga2(Mw, H, Feve, R, St_t, Vs30):
+    #print("Using eq for T = 0.3s")
+    c1 = -3.5422
+    c2 = 0.9441
+    c3 = -0.84814
+    c4 = 0.1
+    c5 = -0.00173
+    c6 = 5
+    c7 = 0.35
+    c8 = 0.00428
+    c9 = -0.05052
+    delta_c1 = 2.2017
+    delta_c2 = -0.5412
+    delta_c3 = -0.36695
+    h0 = 50  # 50 km
+    Mr = 5
+    Vref = 1530  # 1530 m/s
+    #print("Using soil coef: {}".format(St_t))
     if Feve == 0:
         delta_fm = c9 * (Mw ** 2)
     else:
@@ -669,6 +717,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         # logical
         while True:
             logic_input_old = logic_input.copy()
+
             logic_input = get_physical_nodes_lost_by_cc(logic_graph, logic_input, logic_providers, logic_roseta)
 
             if logic_input == logic_input_old:
