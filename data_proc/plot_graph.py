@@ -5,15 +5,19 @@ import data_proc.data_processing as dp
 #G = nx.random_geometric_graph(200, 0.125)
 
 geometry = "20x500"
-model = "RNG"
+model = "GG"
 #G = dp.create_nx_graph(geometry, model, "1")
 #G = dp.create_nx_graph(geometry, model, "1", extra_edges="degree")
 #G = dp.create_nx_graph(geometry, model, "1", extra_edges="distance")
 #
-G = dp.create_nx_graph(geometry, model, "9", extra_edges="random")
+
+color_removed_nodes = dp.check_logic_nodes_removed_immediately(models=[model])
+use_index = 2
+
+G = dp.create_nx_graph(geometry, model, "10")
 dimensions = geometry.split("x")
 space = (int(dimensions[0]), int(dimensions[1]))
-zoom_factor = 7.5
+zoom_factor = 4.4#7.5
 if geometry == "20x500":
     zoom_factor = zoom_factor*3
 
@@ -49,17 +53,17 @@ node_trace = go.Scatter(
     mode='markers',
     hoverinfo='text',
     marker=dict(
-        showscale=True,
+        showscale=False,
         # colorscale options
         #'Greys' | 'YlGnBu' | 'Greens' | 'YlOrRd' | 'Bluered' | 'RdBu' |
         #'Reds' | 'Blues' | 'Picnic' | 'Rainbow' | 'Portland' | 'Jet' |
         #'Hot' | 'Blackbody' | 'Earth' | 'Electric' | 'Viridis' |
-        colorscale='YlGnBu',
-        reversescale=False,
+        colorscale='Viridis',
+        reversescale=True,
         color=[],
-        size=5,
+        size=8,
         colorbar=dict(
-            thickness=15,
+            thickness=8,
             title='Node Connections',
             xanchor='left',
             titleside='right'
@@ -69,9 +73,24 @@ node_adjacencies = []
 node_text = []
 for node, adjacencies in enumerate(G.adjacency()):
     node_adjacencies.append(len(adjacencies[1]))
-    node_text.append('# of connections: {}, pos: ({})'.format(len(adjacencies[1]), G.nodes[adjacencies[0]]['pos']))
+    node_name = adjacencies[0]
+    pos = (round(G.nodes[node_name]['pos'][0], 3), round(G.nodes[node_name]['pos'][1], 3))
 
-node_trace.marker.color = node_adjacencies
+    node_text.append('name: {}, degree: {}, pos: {}'.format(node_name, len(adjacencies[1]), pos))
+
+#node_trace.marker.color = node_adjacencies
+color_using =[]
+for node in G.nodes():
+    if node in ['p52', 'p1821', 'p651'] and node in color_removed_nodes[use_index]:
+        color_using.append(10)
+    elif node in ['p52', 'p1821', 'p651'] and node not in color_removed_nodes[use_index]:
+        color_using.append(2)
+    elif node not in ['p52', 'p1821', 'p651'] and node in color_removed_nodes[use_index]:
+        color_using.append(6)
+    else:
+        color_using.append(0)
+node_trace.marker.color = color_using
+
 node_trace.text = node_text
 fig = go.Figure(data=[edge_trace, node_trace],
                 layout=go.Layout(

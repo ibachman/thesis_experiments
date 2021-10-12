@@ -567,7 +567,7 @@ def double_plot_bar(labels, n_bars, plot_list, data_labels, ylabel, xlabel, titl
     plt.show()
 
 
-def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=False, lv=1, save_fig=False, return_data=False, is_seismic=False, chapter=6):
+def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=False, lv=1, save_fig=False, return_data=False, is_seismic=False, chapter=6, autoclose=False):
     up_group = []
     low_group = []
     HDLA = {}
@@ -582,7 +582,7 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     model_map_shuffle_dict = {}
     for model in models:
 
-        gl_inv, nodes_removed, nr, vers, other_data = dp.correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, radius, legacy=legacy, lv=lv, is_seismic=is_seismic)
+        gl_inv, nodes_removed, nr, vers, other_data = dp.correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, radius, legacy=legacy, lv=lv, is_seismic=is_seismic, find="l50")
 
         z = np.ones(len(nodes_removed))
         p = [x/2000 for x in nodes_removed]
@@ -640,14 +640,17 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
                         print("????")
 
             z = np.ones(len(p))
-            print("min (1-p): {}, max: {}".format(min(p),max(p)))
+            print("min (1-p): {}, max: {}".format(min(p), max(p)))
             plt.scatter(p, gl, s=[x * 10 for x in z], alpha=1, c=magnitude, cmap='viridis_r',
                         label=model)
 
         if map == "find":
             print(model)
-            data = dp.read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=legacy, lv=lv, is_seismic=is_seismic)
-            is_l50 = data["isl50"]
+            if is_seismic:
+                is_l50 = other_data["is_l50"]
+            else:
+                data = dp.read_scatter_plot_data(model, ndep, geometry, radius, strategy, legacy=legacy, lv=lv, is_seismic=is_seismic)
+                is_l50 = data["isl50"]
             title = "Is {} removed during the cascading failure? {}. {}".format(r'$u_L^b$', shape, model)
             if strategy != "simple graphs":
                 title += " + {}".format(strategy)
@@ -680,19 +683,17 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
                     if gl_inv[k] > 0.5:
                         print("mlem")
             if is_seismic:
-                print("HDLA Mw = ({},{})".format(min(Mw_low), max(Mw_low)))
-                print("Non-HDLA Mw = ({},{})".format(min(Mw_high), max(Mw_high)))
+                if len(Mw_low) > 0:
+                    print("HDLA Mw = ({},{})".format(min(Mw_low), max(Mw_low)))
+                if len(Mw_high) > 0:
+                    print("Non-HDLA Mw = ({},{})".format(min(Mw_high), max(Mw_high)))
             size = 20
             if model == models[(len(models) - 1)]:
-                ax.scatter(p_aux_1, gl_aux_1, s=[x * size for x in np.ones(len(p_aux_1))], alpha=1, c=color_true,
-                           label="{} in CF".format(r'$u_L^b$'),edgecolor='black', linewidth=0.2)
-                ax.scatter(p_aux_2, gl_aux_2, s=[x * size for x in np.ones(len(p_aux_2))], alpha=1, c=color_false,
-                           label="{} not in CF".format(r'$u_L^b$'),edgecolor='gray', linewidth=0.1)
+                ax.scatter(p_aux_1, gl_aux_1, s=[x * size for x in np.ones(len(p_aux_1))], alpha=1, c=color_true, label="{} in CF".format(r'$u_L^b$'), edgecolor='black', linewidth=0.2)
+                ax.scatter(p_aux_2, gl_aux_2, s=[x * size for x in np.ones(len(p_aux_2))], alpha=1, c=color_false, label="{} not in CF".format(r'$u_L^b$'), edgecolor='gray', linewidth=0.1)
             else:
-                ax.scatter(p_aux_1, gl_aux_1, s=[x * size for x in np.ones(len(p_aux_1))], alpha=1, c=color_true
-                    ,edgecolor='black', linewidth=0.2)
-                ax.scatter(p_aux_2, gl_aux_2, s=[x * size for x in np.ones(len(p_aux_2))], alpha=1, c=color_false
-                           ,edgecolor='gray', linewidth=0.1)
+                ax.scatter(p_aux_1, gl_aux_1, s=[x * size for x in np.ones(len(p_aux_1))], alpha=1, c=color_true, edgecolor='black', linewidth=0.2)
+                ax.scatter(p_aux_2, gl_aux_2, s=[x * size for x in np.ones(len(p_aux_2))], alpha=1, c=color_false, edgecolor='gray', linewidth=0.1)
 
             if p_aux_1 == []:
                 p_aux_1.append(-1)
@@ -852,7 +853,7 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
         if not is_seismic:
             plt.xlim(0.039, 0.0905)
         else:
-            plt.xlim(-0.001, 0.106)
+            plt.xlim(-0.001, 0.14)
     else:
         plt.xlim(0.0455, 0.1465)
 
@@ -880,7 +881,10 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     plt.xticks(fontsize=13)
     plt.yticks(fontsize=13)
     if not return_data:
-        plt.show()
+        if autoclose:
+            plt.close()
+        else:
+            plt.show()
     else:
         plt.clf()
         if map == 'models':

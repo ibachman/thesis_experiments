@@ -48,6 +48,7 @@ def set_graph_from_csv(csv_file, graph=None):
             graph.add_edge(first, second)
     return graph
 
+
 def data_at_x_percent_damage(node_damage_fraction, number_of_nodes, path, geometry, exp, attack, system_name, legacy=False, lv=None):
     file_line_number = get_line_number_with(node_damage_fraction, number_of_nodes)
 
@@ -89,7 +90,6 @@ def data_at_x_percent_damage(node_damage_fraction, number_of_nodes, path, geomet
                         line += 1
             average_gls.append(numpy.mean(gl))
         return {"x_axis": imax_axis, "y_axis": average_gls}
-
 
 
 def create_average_results_file_in(path, destination_path, geometry, exp, imax, attack, versions, system_name,
@@ -345,8 +345,7 @@ def get_degrees_from_file(path, strategy_path=None):
     return node_degree, max_degree
 
 
-def get_average_degree_distribution_from_file(path, geometry, system_name, mode="sum-all", exp="2.5", nodes_list=[],
-                                              v=None, strategy_path=None):
+def get_average_degree_distribution_from_file(path, geometry, system_name, mode="sum-all", exp="2.5", nodes_list=[], v=None, strategy_path=None):
 
     if mode == "list-only":
         version_list = [v]
@@ -464,7 +463,7 @@ def get_data_from_localized_attack(model, geometry, strategy, ndep, version, r, 
     return x_center, y_center, radius, {"nodes removed": nodes_removed, "g_l": g_l}
 
 
-def get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=1):
+def get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=1, find=None):
     x_center = []
     y_center = []
     nodes_removed = []
@@ -473,6 +472,7 @@ def get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=1)
     event_type = []
     g_l = []
     radius = []
+    found_node = []
     paths = run_data()["seismic_result_paths"]
 
     file_name = "result_ppv3_lv{}_{}_exp_2.5_ndep_{}_att_seismic_v{}_m_{}.csv".format(lv, geometry, ndep, version, model)
@@ -486,14 +486,23 @@ def get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=1)
                 continue
             x_center.append(float(row[0]))
             y_center.append(float(row[1]))
-            g_l.append(float(row[2]))
+            g_l.append(numpy.round(float(row[2]), 3))
             radius.append(float(row[3]))
             magnitude.append(float(row[4]))
             depth.append(float(row[5]))
             event_type.append(float(row[6]))
             nodes_removed.append(parse_nodes_removed_from_localized_attack(row[7]))
+            #print("as str {}, as bool {}".format(row[8], bool(row[8])))
 
-    return x_center, y_center, radius, {"nodes removed": nodes_removed, "g_l":g_l, "Mw": magnitude, "H": depth, "Feve": event_type}
+            if find != None:
+                if row[8] == "True":
+                    found_node.append(True)
+                else:
+                    found_node.append(False)
+            else:
+                found_node.append(False)
+
+    return x_center, y_center, radius, {"nodes removed": nodes_removed, "g_l": g_l, "Mw": magnitude, "H": depth, "Feve": event_type, "is_{}".format(find): found_node}
 
 
 def parse_nodes_removed_from_localized_attack(list_string):
@@ -628,7 +637,7 @@ def create_buckets(start, end, bucket_number, values, degree=False):
     return groups
 
 
-def correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, r, v=None, legacy=False, lv=None, is_seismic=False):
+def correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, r, v=None, legacy=False, lv=None, is_seismic=False, find=None):
     damage = []
     nodes_removed = []
     nodes_list = []
@@ -641,7 +650,7 @@ def correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, r, v=Non
         version_list = (run_data())["versions"]#range(1, 11)
     for version in version_list:
         if is_seismic:
-            x, y, z, data = get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=lv)
+            x, y, z, data = get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=lv, find=find)
         else:
             x, y, z, data = get_data_from_localized_attack(model, geometry, strategy, ndep, version, r, legacy=legacy, lv=lv)
 
@@ -735,8 +744,9 @@ def get_internodes_from_list(node_list, ndep):
     return logic_nodes
 
 
-def get_logic_nodes_interlinks(ndep):
+def get_logic_nodes_number_of_interlinks(ndep):
     path_file = (run_data())["interlink_paths"][ndep]
+    print(path_file)
     logic_nodes = {}
     with open(path_file) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -750,11 +760,148 @@ def get_logic_nodes_interlinks(ndep):
 
 def get_failed_logic_nodes(target_list, ndep):
     failed_nodes = []
-    logic_nodes_inter_links = get_logic_nodes_interlinks(ndep)
+    logic_nodes_inter_links = get_logic_nodes_number_of_interlinks(ndep)
     for node in target_list.keys():
         if target_list[node] == logic_nodes_inter_links[node]:
             failed_nodes.append(node)
     return failed_nodes
+
+
+def check_logic_nodes_removed_immediately(imax=10, strategy="simple graphs", models=None):
+    if models == None:
+        models = ["RNG", "5NN", "GG", "GPA", "YAO", "ER"]
+    geometry = "20x500"
+    radius = 20
+    lv = 1
+    complete_list_of_nodess_removed = []
+    for model in models:
+
+        for version in range(1, 11):
+
+            x_center, y_center, radius, other_data = get_data_from_seismic_attack(model, geometry, strategy, imax, version, lv=1, find="l50")
+            for k in range(len(x_center)):
+                is_l50 = other_data["is_l50"][k]
+                Mw = other_data["Mw"][k]
+                GL = other_data["g_l"][k]
+                nodes_removed = other_data["nodes removed"][k]
+
+                if GL < 0.5:
+                    if is_l50:
+                        print("version: {}, model: {}".format(version, model))
+                        inter_nodes = get_internodes_from_list(nodes_removed, 10)
+                        complete_list_of_nodess_removed.append(nodes_removed)
+                        if "l50" in inter_nodes.keys():
+
+                            print("nº nodes removed: {}".format(len(nodes_removed)))
+                            print("l50: {}".format(inter_nodes["l50"]))
+    return complete_list_of_nodess_removed
+
+
+def compare_seismic_attacks_with_localized_attacks(model, ndep, strategy="simple graphs", lv=1):
+
+    # sort data by center SA
+    seismic_attack_data = sort_attack_data_by_center(model, ndep, strategy=strategy, is_seismic=True, lv=lv)
+    # sort data by
+    localized_attack_data = sort_attack_data_by_center(model, ndep, strategy=strategy, is_seismic=False, lv=lv)
+    centers = list(seismic_attack_data.keys())
+    upper = 0
+    lower = 0
+    mid = 0
+    lower_gl_delta = []
+    higher_gl_delta = []
+    for center in centers:
+        la_limits = {}
+        for la_data in localized_attack_data[center]:
+            la_list_of_nodes_removed = la_data["nodes_removed"]
+            la_number_of_nodes_removed = len(la_list_of_nodes_removed)
+            la_gl = la_data["g_l"]
+            if la_data["v"] not in la_limits.keys():
+                la_limits[la_data["v"]] = []
+            la_limits[la_data["v"]].append({"number_nodes_removed": la_number_of_nodes_removed, "g_l": la_gl})
+
+        for sa_data in seismic_attack_data[center]:
+            sa_list_of_nodes_removed = sa_data["nodes_removed"]
+            sa_number_of_nodes_removed = len(sa_list_of_nodes_removed)
+            sa_gl = sa_data["g_l"]
+            sa_version = sa_data["v"]
+            la_limit_list = la_limits[sa_version]
+            upper, mid, lower, lower_gl_delta, higher_gl_delta = sa_compare_la_bucket(la_limit_list, sa_number_of_nodes_removed, sa_gl, upper, mid, lower, lower_gl_delta, higher_gl_delta)
+
+    #print("upper: {}, mid: {}, lower: {}, total: {}".format(upper/1000, mid/1000, lower/1000, (upper + mid + lower)))
+    #print(lower_gl_delta[1000])
+    return upper, mid, lower, lower_gl_delta, higher_gl_delta
+
+
+def sa_compare_la_bucket(la_limit_list, sa_number_of_nodes_removed, sa_gl, upper, mid, lower, lower_gl_delta, higher_gl_delta):
+    number_of_nodes_range_list = []
+    for la_limit in la_limit_list:
+        la_number_of_nodes = la_limit["number_nodes_removed"]
+        la_gl = la_limit["g_l"]
+        number_of_nodes_range_list.append([la_number_of_nodes, la_gl])
+    if sorted(number_of_nodes_range_list, key=lambda x: x[0]) != sorted(number_of_nodes_range_list, key=lambda x: x[1], reverse=True):
+        print("AAAA")
+        exit(4)
+    number_of_nodes_range_list = sorted(number_of_nodes_range_list, key=lambda x: x[0])
+    number_of_nodes_range_list.append([2000, 0.0])
+
+    low_n_nodes = 0
+    low_gl = 1.0
+
+    for i in range(len(number_of_nodes_range_list)):
+        high_n_nodes = number_of_nodes_range_list[i][0]
+        high_gl = number_of_nodes_range_list[i][1]
+        if (low_n_nodes <= sa_number_of_nodes_removed < high_n_nodes) and round(sa_gl, 3) <= round(high_gl, 3):
+            if round(high_gl, 3) == round(low_gl, 3) and round(sa_gl, 3) == round(low_gl, 3):
+                mid += 1
+            else:
+                upper += 1
+                high_delta_gl = round(high_gl, 3) - round(sa_gl, 3)
+                higher_gl_delta.append([high_delta_gl, sa_number_of_nodes_removed])
+
+        elif (low_n_nodes <= sa_number_of_nodes_removed < high_n_nodes) and round(sa_gl, 3) > round(low_gl, 3):
+            low_delta_gl = round(low_gl, 3) - round(sa_gl, 3)
+            lower_gl_delta.append([low_delta_gl, sa_number_of_nodes_removed])
+
+            lower += 1
+        elif (low_n_nodes <= sa_number_of_nodes_removed < high_n_nodes) and round(low_gl, 3) >= round(sa_gl, 3) > round(high_gl, 3):
+
+            mid += 1
+
+        low_n_nodes = high_n_nodes
+        low_gl = high_gl
+
+    return upper, mid, lower, lower_gl_delta, higher_gl_delta
+
+
+def sort_attack_data_by_center(model, ndep, strategy="simple graphs", is_seismic=False, lv=1):
+    geometry = "20x500"
+    radii = [4, 8, 12, 16, 20]
+    data_by_center = {}
+    if is_seismic:
+        for version in range(1, 11):
+            x_center, y_center, radius, other_data = get_data_from_seismic_attack(model, geometry, strategy, ndep, version, lv=lv, find="l50")
+            for k in range(len(x_center)):
+                center_tuple = (x_center[k], y_center[k])
+                data = {"nodes_removed": other_data["nodes removed"][k], "g_l": other_data["g_l"][k], "v": version}
+                if center_tuple in data_by_center.keys():
+                    data_by_center[center_tuple].append(data)
+                else:
+                    data_by_center[center_tuple] = []
+                    data_by_center[center_tuple].append(data)
+    else:
+        for radius in radii:
+            gl_inv, number_nodes_removed, list_nodes_removed, vers, other_data_LA = correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, radius, legacy=False, lv=lv, is_seismic=False, find="l50")
+            for k in range(len(list_nodes_removed)):
+                LA_x_center = other_data_LA["x_center"][k]
+                LA_y_center = other_data_LA["y_center"][k]
+                center_tuple = (LA_x_center, LA_y_center)
+                data = {"nodes_removed": list_nodes_removed[k], "g_l": (1 - gl_inv[k]), "v": vers[k]}
+                if center_tuple in data_by_center.keys():
+                    data_by_center[center_tuple].append(data)
+                else:
+                    data_by_center[center_tuple] = []
+                    data_by_center[center_tuple].append(data)
+    return data_by_center
 
 
 def create_nx_graph(geometry, model, version, extra_edges=None):
@@ -774,7 +921,7 @@ def create_nx_graph(geometry, model, version, extra_edges=None):
     with open(file_path) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
-            nodes.append((row[0], {'pos': (float(row[1]), float(row[2]))}))
+            nodes.append((row[0], {'pos': (float(row[1]), float(row[2])), "name": row[0]}))
     G.add_nodes_from(nodes)
     
     # load edges
@@ -1057,14 +1204,14 @@ def aux_bet(failed_nodes):
 
 
 def difference_on_logic_nodes_removed(node_list, geometry, ndep, v, model):
-    # get logic nodes lost initialy because of the node_list_removal
+    # get logic nodes lost initially because of the node_list_removal
     internode_list = get_internodes_from_list(node_list, ndep)
     failed_nodes = get_failed_logic_nodes(internode_list, ndep)
     a = logic_nodes_lost_after_removal(failed_nodes, ndep)
 
 
     # get nodes lost considering the extra physical nodes lost because providers
-    p_nodes_no_prov = physical_nodes_lost_after_removal(node_list,model,v,ndep,geometry)
+    p_nodes_no_prov = physical_nodes_lost_after_removal(node_list, model, v, ndep, geometry)
     all_p_nodes = node_list + p_nodes_no_prov
     internode_list = get_internodes_from_list(all_p_nodes, ndep)
     failed_nodes_2 = get_failed_logic_nodes(internode_list, ndep)
@@ -1452,7 +1599,7 @@ def run_data():
                   "distance", "distance_aux", "degree_aux"]
 
     interlink_paths = {}
-    for ndep in get_imax_tested():
+    for ndep in range(1, 11):
         file_name = "dependence_ndep_{}_lprovnum_6_v3.csv".format(ndep)
         if legacy:
             file_name = "dependence_20x500_exp_2.5_ndep_{}_lprovnum_6_v1.csv".format(ndep)

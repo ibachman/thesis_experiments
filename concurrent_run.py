@@ -42,7 +42,8 @@ def worker_run(worker_queue):
                      debug=task['debug'],
                      logic_file_name=task['logic_file_name'],
                      interlink_type=task['interlink_type'],
-                     interlink_version=task['interlink_version'])
+                     interlink_version=task['interlink_version'],
+                     capped_random=task['capped_random'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -113,6 +114,11 @@ def parse_task_args(line):
     task['phys_iteration'] = args.physiteration
     task['strategy'] = args.strategy
     task['make_edges'] = args.makeedges
+    capped_random = args.capped_random
+    if len(capped_random) > 0:
+        task['capped_random'] = "cap{}".format(capped_random)
+    else:
+        task['capped_random'] = ""
     task['localized_attacks_radius'] = args.localizedattacksradius
     task['localized_attacks_center'] = args.localizedattackscenter
     task['localized_attacks_file'] = args.localizedattacksfile
@@ -304,6 +310,8 @@ parser.add_argument('-d', '--debug', action='store_true', help='save as debug re
 parser.add_argument('-lfv', '--logic_file_version', type=int, help='logic file version', default=None)
 parser.add_argument('-intt', '--interlink_type', type=str, help='type of interlink used', default=None)
 parser.add_argument('-intv', '--interlink_version', type=int, help='type of interlink used', default=1)
+
+parser.add_argument('-crand', '--capped_random', type=str, help='type of interlink used', default="")
 
 
 if __name__ == "__main__":

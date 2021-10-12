@@ -91,11 +91,23 @@ geometries = ["20x500", "100x100"]
 exp = "2.5"
 system_names = ["RNG", "GG", "GPA", "5NN", "YAO", "ER"]
 
-for geometry in geometries:
-    for model in system_names:
 
+print("\\begin{table}[h]")
+print("\\centering")
+print("\\small")
+print("\\begin{tabular}{|l|l|l|}")
+print("\\hline")
+print("$m\\diagdown s$ & (1:25) & (1:1) \\\\ \\hline")
+for model in system_names:
+    line = "{} ".format(model)
+    for geometry in geometries:
         edges_mean, edges_std = dp.get_total_edges(geometry, exp, model)
-
-        print("{} {} mean: {}, std: {}".format(model, geometry, edges_mean, edges_std))
+        line += "& {} ({})".format(round(edges_mean, 1), round(edges_std, 1))
+    line += "\\\\ \\hline"
+    print(line)
+print("\\end{tabular}")
+print("\\caption{Average number of links of each physical network. Parenthesis shows standard deviation.}")
+print("\\label{tab:avg_numeber_of_links}")
+print("\\end{table}")
 
 

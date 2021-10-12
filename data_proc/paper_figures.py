@@ -121,5 +121,5 @@ def original_boxplots(save_fig=True):
     cp.show_legacy_tgl_boxplot("5NN", ndep=3, mod_random=mr, save_figure=save_fig)
 
 
-cap_random_boxplots(save_fig=True)
+cap_random_boxplots(save_fig=False)
 

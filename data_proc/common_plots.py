@@ -578,7 +578,6 @@ def show_curves_as_bar_and_error_by_model_double_plot(interlink_type, interlink_
     double_yerr_list = []
     bars_shown = len(models)
 
-
     spaces = [(100, 100), (20, 500)]
     for space in spaces:
         values = []
@@ -606,9 +605,12 @@ def show_curves_as_bar_and_error_by_model_double_plot(interlink_type, interlink_
              "{}={}, {}".format(r'$I_{max}$', ndep, "(1:25)")]
     fig_name = "cap3_show_pnet_effect_ndep_{}.png".format(ndep)
     fig_path = '../figures/cap3/{}'.format(fig_name)
+
     if not save_fig:
         fig_path = None
-    plot.double_plot_bar(x_axis, [bars_shown, bars_shown], double_values, double_legend, r'$TG_L$', r'$q$', title, yerr_list=double_yerr_list, savefig_to=fig_path)
+    else:
+        print(fig_path)
+    plot.double_plot_bar(x_axis, [bars_shown, bars_shown], double_values, double_legend, r'$\overline{TG}_L$', r'$q$', title, yerr_list=double_yerr_list, savefig_to=fig_path)
 
 
 def show_curves_as_bar_and_error_by_model(interlink_type, interlink_version, space, ndep, strategy, m_results=False):
@@ -781,7 +783,6 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 lines["{} {} {}".format(strategy_name, space, model)] = current_line
                 errors["{} {} {}".format(strategy_name, space, model)] = current_error
 
-
         fig_path = '../figures/cap5/{}'.format(fig_name)
         y_lim = [150, max_y + 100]
         x_lim = [2.7, 10.3]
@@ -815,15 +816,17 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
         y_lim = [150, max_y+100]
         x_lim = [0.5, 10.5]
         use_title = False
+    print(fig_path)
     if not save_fig:
         fig_path = None
-    plot.n_line_plot(lines, x_axis, "lv {} {}".format(lv, space), ylim=y_lim, xlim=x_lim, errors=errors, color_pairs=True, savefig_to=fig_path, xlabel=r'$I_{max}$', ylabel=r'$TG_L$',
+
+    plot.n_line_plot(lines, x_axis, "lv {} {}".format(lv, space), ylim=y_lim, xlim=x_lim, errors=errors, color_pairs=True, savefig_to=fig_path, xlabel=r'$I_{max}$', ylabel=r'$\overline{TG}_L$',
                      use_titles=use_title, err_c=error_colors)
 
 
 def show_curves_as_points_by_space(interlink_type, interlink_version, physical_model, strategy, ndep, m_results=False, strategy_2=None, space=None, save_fig=True):
     all_data = dp.run_data()
-    fig, ax = plt.subplots()
+
     size = 10
     all_lines = {}
     all_versions = list(range(1, 11))
@@ -835,8 +838,11 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
     data = []
     axes = []
     legend_aux = {}
+    old = False
 
-    if strategy_2 != None and space != None:
+    if strategy_2 is not None and space is not None:
+        cm = 1 / 2.54
+        fig, ax = plt.subplots(figsize=(20 * cm, 14 * cm))
         legend_dict = {"simple graphs": "Original {}".format(r'$P_j$'),
                        "local_hubs": "Local hubs {}".format(r'$st$'),
                        "distance_aux": "Distance {}".format(r'$st$'),
@@ -845,35 +851,110 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
         lv = 1
         strategies = [strategy, strategy_2]
         physical_models = ["RNG", "GG", "GPA", "5NN", "YAO", "ER"]
+        st_col = []
+        model_value = {}
+        min_val = 1000000
+        max_val = 0
+
         for st in strategies:
+            st_col += [legend_dict[st] for e in range(10)]
+
             for physical_model in physical_models:
                 lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, st)
-                current_marker = markers[space]
-                i = (i + 1) % 2
-                data.append(curves_as_p)
-                axes.append(physical_model)
-                bp = ax.boxplot(curves_as_p, positions=[(physical_models.index(physical_model))], patch_artist=True)
-                for patch in bp['boxes']:
+                if min_val > min(curves_as_p):
+                    min_val = min(curves_as_p)
+                if max_val < max(curves_as_p):
+                    max_val = max(curves_as_p)
+                # model_value[physical_model] end up with a long array containing first values for each st
+                if physical_model in model_value.keys():
+                    model_value[physical_model] += curves_as_p
+                else:
+                    model_value[physical_model] = curves_as_p
 
-                    patch.set_edgecolor(colors[spaces[strategies.index(st)]])
-                    patch.set_facecolor(colors[spaces[strategies.index(st)]])
-                for whisker in bp['whiskers']:
-                    whisker.set(color=colors[spaces[strategies.index(st)]],
-                                linewidth=1.5)
-                for cap in bp['caps']:
-                    cap.set(color=colors[spaces[strategies.index(st)]],
-                            linewidth=2)
-                for flier in bp['fliers']:
-                    flier.set(marker=current_marker,
-                              markerfacecolor=colors[spaces[strategies.index(st)]],
-                              markeredgecolor=colors[spaces[strategies.index(st)]],
-                              alpha=1)
-                for med in bp['medians']:
-                    med.set(color=median_colors[space])
-                legend_aux[st] = bp
-        ax.legend([legend_aux[strategy_2]["boxes"][0], legend_aux[strategy]["boxes"][0]], [legend_dict[strategy_2], legend_dict[strategy]], loc="upper left")
-        plt.ylabel(r'$TG_{L}$', fontsize=15)
-        plt.xticks([0, 1, 2, 3, 4, 5], physical_models)
+                if old:
+                    current_marker = markers[space]
+                    i = (i + 1) % 2
+                    data.append(curves_as_p)
+                    axes.append(physical_model)
+                    bp = ax.boxplot(curves_as_p, positions=[(physical_models.index(physical_model))], patch_artist=True)
+                    for patch in bp['boxes']:
+
+                        patch.set_edgecolor(colors[spaces[strategies.index(st)]])
+                        patch.set_facecolor(colors[spaces[strategies.index(st)]])
+                    for whisker in bp['whiskers']:
+                        whisker.set(color=colors[spaces[strategies.index(st)]],
+                                    linewidth=1.5)
+                    for cap in bp['caps']:
+                        cap.set(color=colors[spaces[strategies.index(st)]],
+                                linewidth=2)
+                    for flier in bp['fliers']:
+                        flier.set(marker=current_marker,
+                                  markerfacecolor=colors[spaces[strategies.index(st)]],
+                                  markeredgecolor=colors[spaces[strategies.index(st)]],
+                                  alpha=1)
+                    for med in bp['medians']:
+                        med.set(color=median_colors[space])
+                    legend_aux[st] = bp
+        if old:
+            ax.legend([legend_aux[strategy_2]["boxes"][0], legend_aux[strategy]["boxes"][0]], [legend_dict[strategy_2], legend_dict[strategy]], loc="upper left")
+            plt.ylabel(r'$TG_{L}$', fontsize=15)
+            plt.xticks([0, 1, 2, 3, 4, 5], physical_models)
+        else:
+            colors_st_1 = {legend_dict[strategy]: '#1d91c0',
+                           legend_dict[strategy_2]: '#ae017e'}
+            colors_st_2 = {legend_dict[strategy]: '#0c06c2', legend_dict[strategy_2]: '#d10845'}
+            data = {}
+            for physical_model in physical_models:
+                data[physical_model] = model_value[physical_model]
+            data["Strategy"] = st_col
+            df = pd.DataFrame(data)
+
+            df_melt = df.melt(id_vars='Strategy',
+                              value_vars=physical_models,
+                              var_name='columns')
+
+            ax1 = sns.stripplot(data=df_melt,
+                                hue='Strategy',  # different colors for different 'cls'
+                                x='columns',
+                                y='value',
+                                order=physical_models,
+                                palette=colors_st_1, jitter=.25, edgecolor='black',
+                                dodge=True, linewidth=1, size=4, alpha=0.4)
+            b = sns.boxplot(data=df_melt,
+                            hue='Strategy',  # different colors for different 'cls'
+                            x='columns',
+                            y='value',
+                            order=physical_models,
+                            palette=colors_st_2,
+                            showfliers=False,
+                            ax=ax, width=0.9)
+            ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+            ax.xaxis.grid(True, which='minor', color='grey', lw=1)
+
+            for i, artist in enumerate(ax.artists):
+                # Set the linecolor on the artist to the facecolor, and set the facecolor to None
+                col = artist.get_facecolor()
+                artist.set_edgecolor(col)
+                artist.set_facecolor('None')
+                # Each box has 6 associated Line2D objects (to make the whiskers, fliers, etc.)
+                # Loop over them here, and use the same colour as above
+                n = 5
+                for j in range(i * n, i * n + n):
+                    line = ax.lines[j]
+                    line.set_color(col)
+                    line.set_mfc(col)
+                    line.set_mec(col)
+
+            # plt.title('Boxplot grouped by cls')  # You can change the title here
+
+            handles, labels = ax.get_legend_handles_labels()
+            new_handles = [handles[1], handles[0]]
+            new_labels = ["{}".format(labels[1]), "{}".format(labels[0])]
+            ax.legend(new_handles, new_labels, prop={'size': 12}, loc="upper left")
+
+            plt.ylabel(r'$\overline{TG}_{L}$', fontsize=18)
+            ax.tick_params(axis='both', which='major', labelsize=12)
+            plt.xlabel("", fontsize=1)
         space_name = {(20, 500): "ln", (100, 100): "sq"}
         fig_name = 'cap5_show_before_after_ndep_{}_{}_{}.png'.format(ndep, space_name[space], strategy_2)
         fig_path = '../figures/cap5/{}'.format(fig_name)
@@ -881,40 +962,124 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
         if save_fig:
             plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
     else:
-        for lv in all_versions:
-            for space in spaces:
 
-                space_name = all_data["file_space_names"][space]
+        spaces = [(20, 500), (100, 100)]
+        space_name = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
+
+        cm = 1 / 2.54
+        fig, ax = plt.subplots(figsize=(20 * cm, 14 * cm))
+        space_col = []
+        logic_version_value = {}
+        min_val = 1000000
+        max_val = 0
+        for space in spaces:
+            # space_name = all_data["file_space_names"][space]
+            space_col += [space_name[space] for e in range(10)]
+            for lv in all_versions:
+
                 lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=m_results)
+                if min_val > min(curves_as_p):
+                    min_val = min(curves_as_p)
+                if max_val < max(curves_as_p):
+                    max_val = max(curves_as_p)
+                # logic_version_value[lv] end up with a long array containg first values for space1 and then for space2
+                if lv in logic_version_value.keys():
+                    logic_version_value[lv] += curves_as_p
+                else:
+                    logic_version_value[lv] = curves_as_p
 
-                current_marker = markers[space]
-                i = (i+1) % 2
-                data.append(curves_as_p)
-                axes.append(lv)
-                bp = ax.boxplot(curves_as_p, positions=[lv], patch_artist=True)
-                for patch in bp['boxes']:
-                    patch.set_edgecolor(colors[space])
-                    patch.set_facecolor(colors[space])
-                for whisker in bp['whiskers']:
-                    whisker.set(color=colors[space],
-                                linewidth=1.5)
-                for cap in bp['caps']:
-                    cap.set(color=colors[space],
-                            linewidth=2)
-                for flier in bp['fliers']:
-                    flier.set(marker=current_marker,
-                              markerfacecolor=colors[space],
-                              markeredgecolor=colors[space],
-                              alpha=1)
-                for med in bp['medians']:
-                    med.set(color=median_colors[space])
-                legend_aux[space] = bp
-        model = physical_model
-        ax.legend([legend_aux[(100, 100)]["boxes"][0], legend_aux[(20, 500)]["boxes"][0]], ['{} (1:1)'.format(model), '{} (1:25)'.format(model)], loc="upper left")
-        plt.xlabel(r'$q$', fontsize=12)
-        plt.ylabel(r'$TG_{L}$', fontsize=15)
-        fig_name = 'cap3_show_space_{}_ndep_{}.png'.format(model, ndep)
+                if old:
+                    current_marker = markers[space]
+                    i = (i+1) % 2
+                    data.append(curves_as_p)
+                    axes.append(lv)
+                    bp = ax.boxplot(curves_as_p, positions=[lv], patch_artist=True)
+                    for patch in bp['boxes']:
+                        patch.set_edgecolor(colors[space])
+                        patch.set_facecolor(colors[space])
+                    for whisker in bp['whiskers']:
+                        whisker.set(color=colors[space],
+                                    linewidth=1.5)
+                    for cap in bp['caps']:
+                        cap.set(color=colors[space],
+                                linewidth=2)
+                    for flier in bp['fliers']:
+                        flier.set(marker=current_marker,
+                                  markerfacecolor=colors[space],
+                                  markeredgecolor=colors[space],
+                                  alpha=1)
+                    for med in bp['medians']:
+                        med.set(color=median_colors[space])
+                    legend_aux[space] = bp
+
+        if old:
+            model = physical_model
+            ax.legend([legend_aux[(100, 100)]["boxes"][0], legend_aux[(20, 500)]["boxes"][0]], ['{} (1:1)'.format(model), '{} (1:25)'.format(model)], loc="upper left")
+            plt.xlabel(r'$q$', fontsize=12)
+            plt.ylabel(r'$TG_{L}$', fontsize=15)
+        else:
+
+            data = {}
+            for lv in all_versions:
+                data[lv] = logic_version_value[lv]
+            data["Space"] = space_col
+            df = pd.DataFrame(data)
+
+            df_melt = df.melt(id_vars='Space',
+                              value_vars=all_versions,
+                              var_name='columns')
+
+            ax1 = sns.stripplot(data=df_melt,
+                                hue='Space',  # different colors for different 'cls'
+                                x='columns',
+                                y='value',
+                                order=all_versions,
+                                palette={"(1:25)": '#1d91c0', "(1:1)": '#ae017e'}, jitter=.25, edgecolor='black',
+                                dodge=True, linewidth=1, size=4, alpha=0.4)
+            b = sns.boxplot(data=df_melt,
+                            hue='Space',  # different colors for different 'cls'
+                            x='columns',
+                            y='value',
+                            order=all_versions,
+                            palette={"(1:25)": '#0c06c2', "(1:1)": '#d10845'},
+                            showfliers=False,
+                            ax=ax, width=0.9)
+            ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+            ax.xaxis.grid(True, which='minor', color='grey', lw=1)
+
+            for i, artist in enumerate(ax.artists):
+                # Set the linecolor on the artist to the facecolor, and set the facecolor to None
+                col = artist.get_facecolor()
+                artist.set_edgecolor(col)
+                artist.set_facecolor('None')
+                # Each box has 6 associated Line2D objects (to make the whiskers, fliers, etc.)
+                # Loop over them here, and use the same colour as above
+                n = 5
+                for j in range(i * n, i * n + n):
+                    line = ax.lines[j]
+                    line.set_color(col)
+                    line.set_mfc(col)
+                    line.set_mec(col)
+
+            # plt.title('Boxplot grouped by cls')  # You can change the title here
+            if ndep == 1 and physical_model != "GPA":
+                plt.ylim(min_val - 5, max_val + 25)
+            elif ndep == 8 and physical_model in ["5NN", "YAO", "GPA", "ER"]:
+                plt.ylim(min_val - 5, max_val + 55)
+            else:
+                plt.ylim(min_val - 5, max_val + 5)
+            handles, labels = ax.get_legend_handles_labels()
+            new_handles = [handles[1], handles[0]]
+            new_labels = ["{} {}".format(physical_model, labels[1]), "{} {}".format(physical_model, labels[0])]
+            ax.legend(new_handles, new_labels, prop={'size': 12}, loc="upper left")
+
+            plt.ylabel(r'$\overline{TG}_{L}$', fontsize=18)
+            ax.tick_params(axis='both', which='major', labelsize=12)
+            plt.xlabel(r'$q$', fontsize=18)
+
+        fig_name = 'cap3_show_space_{}_ndep_{}.png'.format(physical_model, ndep)
         fig_path = '../figures/cap3/{}'.format(fig_name)
+        print(fig_path)
         if save_fig:
             plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
     plt.show()
@@ -1028,6 +1193,7 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
                 strategy_values[st] = curves_as_p
             else:
                 strategy_values[st] += curves_as_p
+
     data = {}
     for st in strategies:
         data[st_name[st]] = strategy_values[st]
@@ -1247,6 +1413,73 @@ def gl_compare_strategies(lv, space, model, imax, debug=False, save_fig=True):
         fig_path = None
 
     plot.n_line_plot(lines, x, "", c_list=color_list, markers=markers, marker_size=mark_size, line_size=l_width, savefig_to=fig_path)
+
+
+def la_sa_comparison_scatter_plot(ndep=3, model=None, save_fig=False, strategy="simple graphs", autoclose=False):
+    cm = 1 / 2.54
+    fig, ax = plt.subplots(figsize=(20*cm, 15*cm))
+    number_of_physical_nodes = 2000
+    size = 10
+    models = ["RNG", "GG", "GPA", "5NN", "YAO", "ER"]
+    min_gl = 10
+    max_gl = -1
+    if model != None:
+        models = [model]
+    for model in models:
+
+        print("{}, {}".format(model, ndep))
+        upper, mid, lower, lower_gl_delta, higher_gl_delta = dp.compare_seismic_attacks_with_localized_attacks(model, ndep, strategy=strategy, lv=1)
+
+        x_axis = [x[1]/number_of_physical_nodes for x in higher_gl_delta]
+        y_axis = [x[0] for x in higher_gl_delta]
+        color = "#c5080e"
+        z = np.ones(len(x_axis))
+        points_sizes = [x * size for x in z]
+        ax.scatter(x_axis, y_axis, s=points_sizes, alpha=1, c=color, label="Damage SA > Damage LA ", edgecolor='black', linewidth=0.2)
+        current_max_gl = max(y_axis)
+        if current_max_gl > max_gl:
+            max_gl = current_max_gl
+
+        x_axis = [x[1] / number_of_physical_nodes for x in lower_gl_delta]
+        y_axis = [x[0] for x in lower_gl_delta]
+        color = "#1a25bd"
+        z = np.ones(len(x_axis))
+        points_sizes = [x * size for x in z]
+        ax.scatter(x_axis, y_axis, s=points_sizes, alpha=1, c=color, label="Damage SA < Damage LA ", edgecolor='black', linewidth=0.2)
+        current_min_gl = min(y_axis)
+        if current_min_gl < min_gl:
+            min_gl = current_min_gl
+
+    ax.axhline(0, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(1, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(-1, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(0.75, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(0.5, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(0.25, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(-0.75, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(-0.5, color='gray', linewidth=1, linestyle='dotted')
+    ax.axhline(-0.25, color='gray', linewidth=1, linestyle='dotted')
+    plt.ylim(min_gl - 0.05, max_gl + 0.05)
+    if ndep > 3:
+        plt.xlim(- 0.0008, 0.127)
+    else:
+        plt.xlim(- 0.0008, 0.133)
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend([handles[0], handles[1]], [labels[0], labels[1]], loc='upper right')
+
+    plt.ylabel(r'$G_L(SA) - G_L(LA)$', fontsize=15)
+    plt.xlabel('(1 - p)', fontsize=15)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    fig_name = 'cap7_compare_sa_la_ndep_{}_{}.png'.format(ndep, strategy.replace(" ", "_"))
+    if save_fig:
+        fig_path = '../figures/cap7/{}'.format(fig_name)
+        print("saving figure in: {}".format(fig_path))
+        plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
+    if autoclose:
+        plt.clf()
+    else:
+        plt.show()
 
 
 def seaborn_test_boxplot():
