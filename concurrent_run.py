@@ -222,7 +222,8 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          debug=task['debug'],
                          logic_file_name=task['logic_file_name'],
                          interlink_type=task['interlink_type'],
-                         interlink_version=task['interlink_version'])
+                         interlink_version=task['interlink_version'],
+                         capped_random=task['capped_random'])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
