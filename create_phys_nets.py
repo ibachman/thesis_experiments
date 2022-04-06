@@ -7,6 +7,7 @@ import igraph
 import datetime
 import operator
 import os
+import CAIDA_data.data_handler as dh
 
 
 def create_coordinates():
@@ -239,7 +240,7 @@ def check_edges(model):
         print("Model {} has problems".format(model))
 
 
-def create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n_inter, version, interlink_type, legacy=False):
+def create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n_inter, version, interlink_type, legacy=False, use_as_suppliers=[], as_suppliers_low_priority=[]):
     print("start {}".format(datetime.datetime.now()))
 
     phys_id_list = []
@@ -256,24 +257,28 @@ def create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n
                          5: ['l227', 'l60', 'l92', 'l17', 'l122', 'l3'],
                          7: ['l194', 'l90', 'l260', 'l49', 'l259', 'l285'],
                          10: ['l96', 'l220', 'l132', 'l25', 'l24', 'l285']}
-    if legacy and n_inter in list(as_suppliers_dict.keys()):
-        as_suppliers = as_suppliers_dict[n_inter]
+    if use_as_suppliers:
+        as_suppliers = use_as_suppliers
     else:
-        as_suppliers = network_generators.set_logic_suppliers(logic_id_list, n_logic_suppliers)
+        if legacy and n_inter in list(as_suppliers_dict.keys()):
+            as_suppliers = as_suppliers_dict[n_inter]
+        else:
+            as_suppliers = network_generators.set_logic_suppliers(logic_id_list, n_logic_suppliers)
 
     print("Logic suppliers ready {}".format(datetime.datetime.now()))
 
     interdep_graph = network_generators.set_interdependencies(phys_id_list, logic_id_list, n_inter, as_suppliers,
-                                                              mode=interlink_type)
+                                                              mode=interlink_type, as_suppliers_low_priority=as_suppliers_low_priority)
 
     print("interdep ready {}".format(datetime.datetime.now()))
+    all_as_suppliers = list(set(as_suppliers_low_priority + as_suppliers))
 
-    phys_suppliers = network_generators.set_physical_suppliers(interdep_graph, as_suppliers)
+    phys_suppliers = network_generators.set_physical_suppliers(interdep_graph, all_as_suppliers)
 
     print("Phys suppliers ready {}".format(datetime.datetime.now()))
 
     network_system = InterdependentGraph()
-    network_system.create_from_empty_logic_physical(logic_id_list, as_suppliers, phys_id_list, phys_suppliers,
+    network_system.create_from_empty_logic_physical(logic_id_list, all_as_suppliers, phys_id_list, phys_suppliers,
                                                     interdep_graph)
 
     print("system created {}".format(datetime.datetime.now()))
@@ -281,6 +286,26 @@ def create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n
     network_system.save_interlinks_and_providers(n_inter, version=version, interlink_mode=interlink_type)
 
     print("system saved {}".format(datetime.datetime.now()))
+
+
+def create_interlinks_for_directed_logic_network(n_inter, version="ipinfo"):
+    provider_list = dh.get_chile_providers_using_isp_marker()
+    directed_graph = dh.make_directed_graph("asninfo_rels.csv", use_html_names=True)
+    as_suppliers_low_priority = dh.get_chile_providers_using_isp_marker(use_international_connection="asninfo_rels.csv", get_international_connection_only=True)
+    as_suppliers_low_priority_ids = []
+    n_logic = len(directed_graph.vs)
+    n_phys = 2000
+    n_logic_suppliers = len(provider_list)
+    interlink_type = "provider_priority"
+    provider_ids = []
+    for node in directed_graph.vs:
+        if node["name"] in provider_list:
+            provider_ids.append("l{}".format(node.index))
+        elif node["name"] in as_suppliers_low_priority:
+            as_suppliers_low_priority_ids.append("l{}".format(node.index))
+
+    create_interdependencies_and_providers(n_logic, n_phys, n_logic_suppliers, n_inter, version, interlink_type, legacy=False, use_as_suppliers=provider_ids,
+                                           as_suppliers_low_priority=as_suppliers_low_priority_ids)
 
 
 def create_interlinks_and_provider_from_previous(og_ndep, og_provider_file_name, og_interlink_file_name,
@@ -870,26 +895,10 @@ def parse_inner_network(network, providers):
     return name_by_index, node_paths_to_providers
 
 
-og_ndep = 3
-og_provider_file_name = "networks/providers/provider_priority/providers_ndep_3_lprovnum_6_v3.csv"
-og_interlink_file_name = "networks/interdependencies/provider_priority/dependence_ndep_3_lprovnum_6_v3.csv"
-target_ndep = 7
-target_provider_file_name = "networks/providers/provider_priority/og-providers_ndep_7_lprovnum_6_v3.csv"
-target_interlink_file_name = "networks/interdependencies/provider_priority/og-dependence_ndep_7_lprovnum_6_v3.csv"
-
-#create_interlinks_and_provider_from_previous(og_ndep, og_provider_file_name, og_interlink_file_name,
-#                                                 target_ndep, target_provider_file_name, target_interlink_file_name,
-#                                                 debug=True)
-
-
-#create_extra_edges('RNG', "distance", number=3000)
-
-
-#create_extra_edges('RNG', "random", number=640, max_length=1)
-
 def create_extra_edges_cap_random_length(strategy=None, length=0.0):
     strategies = [strategy]#, "local_hubs", "degree", "random"]
-    models = ["GG", "5NN", "RNG"]
+    #models = ["GG", "5NN", "RNG"]
+    models = ["YAO", "GPA", "ER"]
     spaces = [[20, 500], [100, 100]]#
     if strategy:
         for strategy in strategies:
@@ -921,7 +930,6 @@ def create_extra_edges_cap_random_length(strategy=None, length=0.0):
                     create_extra_edges(model, "random", number=640, max_length=mean/div, spaces=[s], max_length_from=strategy, max_cost=mcost)
     elif 1 >= length > 0:
         strategy = 'random'
-
         for model in models:
             for s in spaces:
                 if length == 0.01:
@@ -935,6 +943,7 @@ def create_extra_edges_cap_random_length(strategy=None, length=0.0):
                     maxes = [l * length for l in maxes]
 
                 print(maxes)
+
                 create_extra_edges(model, "random", number=640, max_length=maxes, spaces=[s], max_length_from="cap{}".format(length))
 
 
@@ -974,4 +983,26 @@ def check_distinct_edges(strategy, model):
         print(len(list(edge_set)))
 #check_distinct_edges("local_hubs", "RNG")
 
-#create_extra_edges_cap_random_length(strategy=None, length=1.0)
+#create_extra_edges_cap_random_length(strategy=None, length=0.75)
+
+
+og_ndep = 3
+og_provider_file_name = "networks/providers/provider_priority/providers_ndep_3_lprovnum_6_v3.csv"
+og_interlink_file_name = "networks/interdependencies/provider_priority/dependence_ndep_3_lprovnum_6_v3.csv"
+target_ndep = 7
+target_provider_file_name = "networks/providers/provider_priority/og-providers_ndep_7_lprovnum_6_v3.csv"
+target_interlink_file_name = "networks/interdependencies/provider_priority/og-dependence_ndep_7_lprovnum_6_v3.csv"
+
+#create_interlinks_and_provider_from_previous(og_ndep, og_provider_file_name, og_interlink_file_name,
+#                                                 target_ndep, target_provider_file_name, target_interlink_file_name,
+#                                                 debug=True)
+
+
+#create_extra_edges('RNG', "distance", number=3000)
+
+
+#create_extra_edges('RNG', "random", number=640, max_length=1)
+#print("-------------------------------------")
+#for i in range(1, 11):
+#    create_interlinks_for_directed_logic_network(i, version="ipinfo")
+
