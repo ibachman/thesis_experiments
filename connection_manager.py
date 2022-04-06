@@ -31,14 +31,14 @@ class ConnectionManager:
         self.machine_name = machine_name
 
     def set_job_done(self, job_id):
-        self.connection = http.client.HTTPConnection(self.server_name)
+        self.connection = http.client.HTTPSConnection(self.server_name)
         uri = "/job_done/{}".format(job_id)
         self.connection.request("GET", uri)
         json_data = self.connection.getresponse()
 
     def set_job_doing(self, job_id, machine_name=None):
         # job_start/4849
-        self.connection = http.client.HTTPConnection(self.server_name)
+        self.connection = http.client.HTTPSConnection(self.server_name)
         uri = "/job_start/{}".format(job_id)
         if machine_name:
             uri += "?machine={}".format(machine_name)
@@ -57,7 +57,7 @@ class ConnectionManager:
             return self.get_jobs_from_server(1)
 
     def get_jobs_from_server(self, n_workers):
-        self.connection = http.client.HTTPConnection(self.server_name)
+        self.connection = http.client.HTTPSConnection(self.server_name)
         uri = "/get_jobs/{}".format(n_workers)
         if self.machine_name:
             uri += "?machine={}".format(self.machine_name)
@@ -66,7 +66,7 @@ class ConnectionManager:
         return get_lines_from_json(json_data)
 
     def get_all_jobs_from_server(self, check_status):
-        self.connection = http.client.HTTPConnection(self.server_name)
+        self.connection = http.client.HTTPSConnection(self.server_name)
         uri = "/status/"
         self.connection.request("GET", uri)
         json_data = self.connection.getresponse()
