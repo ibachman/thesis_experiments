@@ -2,7 +2,8 @@ import igraph
 import csv
 import os
 import time
-import gc
+import CAIDA_data.data_handler as dh
+
 
 def save_as_csv(path, file_name, content_dict):
     title = os.path.join(path,file_name)
@@ -211,11 +212,15 @@ class InterdependentGraph(object):
 
     def create_from_csv(self, AS_net_csv, physical_net_csv, interactions_csv, nodes_title, providers_csv="",
                         AS_provider_nodes=[],
-                        physical_provider_nodes=[]):
+                        physical_provider_nodes=[],
+                        logical_directed_network=""):
         x = 0
         y = 1
         # Create AS graph from csv file
-        self.AS_network = set_graph_from_csv(AS_net_csv)
+        if logical_directed_network == "":
+            self.AS_network = set_graph_from_csv(AS_net_csv)
+        else:
+            self.AS_network = dh.make_directed_graph(logical_directed_network, use_html_names=True, use_index_names=True)
 
         ##### Create physical graph from csv file
         self.physical_network = set_graph_from_csv(physical_net_csv)
@@ -251,6 +256,7 @@ class InterdependentGraph(object):
                             AS_provider_nodes.append(str(row[0]))
                         if type_of_provider == "physical":
                             physical_provider_nodes.append(str(row[0]))
+        # set providers differently if logical_directed_network != "
 
         as_net_name_list = self.AS_network.vs['name']
         physical_net_name_list = self.physical_network.vs['name']

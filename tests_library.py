@@ -654,6 +654,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
 
     all_delta = [[], [], [], [], [], [], [], [], [], []]
     all_loop_time = []
+    #verbose = True
 
     amp = 10000000
     while True:
@@ -713,12 +714,14 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
         timestamp_5 = time.time()
         delta_4 = (timestamp_5 - timestamp_4) * amp
         all_delta[3].append(delta_4)
-
         # logical
         while True:
             logic_input_old = logic_input.copy()
 
-            logic_input = get_physical_nodes_lost_by_cc(logic_graph, logic_input, logic_providers, logic_roseta)
+            if logic_graph.is_directed():
+                logic_input = get_nodes_lost_directed_graph(logic_graph, logic_input, logic_providers, logic_roseta)
+            else:
+                logic_input = get_physical_nodes_lost_by_cc(logic_graph, logic_input, logic_providers, logic_roseta)
 
             if logic_input == logic_input_old:
                 del logic_input_old
@@ -823,6 +826,98 @@ def get_physical_nodes_lost_by_cc(physical_graph, phys_input, providers, phys_ro
         phys_input_copy[index] = False
 
     return phys_input_copy
+
+
+def get_nodes_lost_directed_graph(directed_graph, directed_graph_input, providers, directed_graph_roseta):
+    new_lost_nodes = []
+    graph_copy = directed_graph.copy()
+    directed_graph_input_copy = directed_graph_input.copy()
+    nodes_to_delete = [i for i in range(len(directed_graph_input)) if not directed_graph_input[i]]
+
+    graph_copy.delete_vertices(nodes_to_delete)
+
+    reachable_nodes = []
+
+    # if the provider was removed within the "nodes to delete" then we do not check it
+    providers_to_check = [x for x in providers if x not in directed_graph.vs[nodes_to_delete]["name"] and (directed_graph.degree(x, mode='in') + directed_graph.degree(x, mode='out')) > 0]
+
+    # remove isolated providers
+    providers_to_delete = [x for x in providers if x not in providers_to_check and x not in directed_graph.vs[nodes_to_delete]["name"]]
+    graph_copy.delete_vertices(providers_to_delete)
+
+    # check for other isolated nodes
+    # since we only remove isolated nodes this won't change the rest of the graph
+    delete_more_nodes = []
+    for node in graph_copy.vs:
+        if (graph_copy.degree(node, mode='in') + graph_copy.degree(node, mode='out')) == 0:
+            node_name = node['name']
+            if node_name in providers_to_check:
+                providers_to_check.remove(node_name)
+            elif node_name not in providers:
+                delete_more_nodes.append(node_name)
+    # we delete these isolated nodes and append them to the "new_lost_nodes"
+    if len(delete_more_nodes) > 0:
+        graph_copy.delete_vertices(delete_more_nodes)
+        for node_name in delete_more_nodes:
+            new_lost_nodes.append(node_name)
+
+    # we obtain weakly connected clusters
+    use_clusters = False
+    if use_clusters:
+        print("using clusters")
+        clusters = graph_copy.clusters(mode='weak')
+        for c in clusters:
+            is_alive = False
+            name_c = graph_copy.vs[c]['name']
+            if len(name_c) > len(providers_to_check):
+                for sup in providers:
+                    if sup in name_c:
+                        is_alive = True
+                        break
+            elif len(name_c) > 1:
+                for node in name_c:
+                    if node in providers:
+                        is_alive = True
+                        break
+            # we discard components with no providers
+            if not is_alive:
+                new_lost_nodes = new_lost_nodes + name_c
+    #r2 = []
+
+    #amp = 10 ** 7
+    for provider in providers_to_check:
+        #comp = []
+        #print("----------+++++++++---------> {}".format(provider))
+        #timestamp_0 = time.time()
+        #paths = graph_copy.get_shortest_paths(provider, mode='in', output='vpath')
+        #for i in range(len(paths)):
+        #    if len(paths[i]) > 0:
+        #        comp.append(i)
+        #timestamp_1 = time.time()
+        nodes_r = graph_copy.subcomponent(provider, mode='in')
+        reachable_nodes += nodes_r
+        #timestamp_2 = time.time()
+        #reachable_nodes += comp
+        #print("delta paths: {}".format((timestamp_1 - timestamp_0)* amp))
+        #print("delta subcomponents: {}".format((timestamp_2 - timestamp_1) * amp))
+        #print("{} - {} -> {}".format(len(set(comp)), len(set(nodes_r)), set(comp) == set(nodes_r)))
+        #if not set(comp) == set(nodes_r):
+        #    print("ERROR")
+        #    exit(88)
+
+    set_of_reachable_nodes = list(set(reachable_nodes))
+
+    for i in range(len(graph_copy.vs)):
+        if i not in set_of_reachable_nodes:
+            new_lost_nodes.append(graph_copy.vs[i]['name'])
+
+    del graph_copy
+
+    for node in new_lost_nodes:
+        index = directed_graph_roseta[node]
+        directed_graph_input_copy[index] = False
+
+    return directed_graph_input_copy
 
 
 def remove_isolated_nodes_from_inter(inter_graph, inter_input, inter_roseta):

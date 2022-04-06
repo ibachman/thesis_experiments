@@ -9,7 +9,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None, capped_random="",
-             interlink_version=1):
+             interlink_version=1, logical_directed_network=""):
 
     #########################
     fix_bridge_nodes_interlinks = False
@@ -60,19 +60,25 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                 logic_title = logic_file_name
             else:
                 logic_title = "legacy_{}".format(csv_title_generator("logic", "20", "500", exp, version=1))
-            interlink_title = csv_title_generator("dependence",  "", "", "", n_inter, 6, version=interlink_version)
-            providers_title = csv_title_generator("providers",  "", "", "", n_inter, 6, version=interlink_version)
+            if logical_directed_network != "":
+                interlink_title = csv_title_generator("dependence", "", "", "", n_inter, 189, version="ipinfo")
+                providers_title = csv_title_generator("providers", "", "", "", n_inter, 189, version="ipinfo")
+            else:
+                interlink_title = csv_title_generator("dependence",  "", "", "", n_inter, 6, version=interlink_version)
+                providers_title = csv_title_generator("providers",  "", "", "", n_inter, 6, version=interlink_version)
 
         nodes_loc_title = csv_title_generator("nodes", x_coordinate, y_coordinate, exp, version=version)
         physic_title = csv_title_generator("physic", x_coordinate, y_coordinate, exp, version=version, model=model)
         logic_dir = os.path.join(logic_dir, logic_title)
         physical_dir = os.path.join(physical_dir, physic_title)
+
         interlink_dir = os.path.join(interlink_dir, interlink_title)
         providers_dir = os.path.join(providers_dir, providers_title)
+
         nodes_loc_dir = os.path.join(node_loc_dir, nodes_loc_title)
 
         network_system.create_from_csv(logic_dir, physical_dir, interlink_dir, nodes_loc_dir,
-                                       providers_csv=providers_dir)
+                                       providers_csv=providers_dir, logical_directed_network=logical_directed_network)
 
         print("{} -- System created {} from:".format(process_name, datetime.datetime.now()))
         print("{} -- -> Logical network: {}".format(process_name, logic_dir))
@@ -232,9 +238,12 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             # attack only physical network
             physical_attack_title = csv_title_generator("result", x_coordinate, y_coordinate, exp, n_dependence=n_inter,
                                                         attack_type="physical", version=version, model=model)
+            if logical_directed_network != "":
+                prefix = logical_directed_network.replace(".csv", "")
+                physical_attack_title = "{}_{}".format(prefix, physical_attack_title)
             if logic_file_name:
                 physical_attack_title = physical_attack_title.replace("result_","")
-                lver = (logic_file_name.replace("ogic_exp_2.5_","")).replace(".csv","")
+                lver = (logic_file_name.replace("ogic_exp_2.5_", "")).replace(".csv", "")
                 physical_attack_title = "result_{}_{}".format(lver, physical_attack_title)
             if interlink_type:
                 physical_attack_title = physical_attack_title.replace("result_", "")

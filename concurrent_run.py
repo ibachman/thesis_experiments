@@ -43,7 +43,8 @@ def worker_run(worker_queue):
                      logic_file_name=task['logic_file_name'],
                      interlink_type=task['interlink_type'],
                      interlink_version=task['interlink_version'],
-                     capped_random=task['capped_random'])
+                     capped_random=task['capped_random'],
+                     logical_directed_network=task['logical_directed_network'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -114,6 +115,7 @@ def parse_task_args(line):
     task['phys_iteration'] = args.physiteration
     task['strategy'] = args.strategy
     task['make_edges'] = args.makeedges
+    task['logical_directed_network'] = args.logical_directed_network
     capped_random = args.capped_random
     if len(capped_random) > 0:
         task['capped_random'] = "cap{}".format(capped_random)
@@ -223,7 +225,8 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          logic_file_name=task['logic_file_name'],
                          interlink_type=task['interlink_type'],
                          interlink_version=task['interlink_version'],
-                         capped_random=task['capped_random'])
+                         capped_random=task['capped_random'],
+                         logical_directed_network=task['logical_directed_network'])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
@@ -313,6 +316,8 @@ parser.add_argument('-intt', '--interlink_type', type=str, help='type of interli
 parser.add_argument('-intv', '--interlink_version', type=int, help='type of interlink used', default=1)
 
 parser.add_argument('-crand', '--capped_random', type=str, help='type of interlink used', default="")
+
+parser.add_argument('-ld', '--logical_directed_network', type=str, help='use a directed graph for the logical network', default="")
 
 
 if __name__ == "__main__":

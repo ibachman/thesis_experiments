@@ -580,11 +580,13 @@ def set_physical_suppliers(interlink_network, logic_suppliers):
 
 
 def set_interdependencies(physical_network_nodes_ids, logic_network_nodes_ids, max_number_of_interdependencies,
-                          as_suppliers, mode="semi random"):
+                          as_suppliers, mode="semi random", as_suppliers_low_priority=[]):
+    mode = mode.replace("_", " ")
     connections = []
     physical_nodes_included = {}
     all_supplier_counterparts = {}
     non_supplier_logic_nodes = [x for x in logic_network_nodes_ids if x not in as_suppliers]
+
     inter_degree_list = []
     if mode == "semi random":
         # get a list of "interdegrees" try to give the highest degrees to the supliers and then random
@@ -668,7 +670,7 @@ def set_interdependencies(physical_network_nodes_ids, logic_network_nodes_ids, m
             # only include non-isolated nodes from the physical network
             physical_nodes_included[physical_node] = physical_node
 
-            if logic_node in as_suppliers:
+            if (logic_node in as_suppliers) or (logic_node in as_suppliers_low_priority):
                 all_supplier_counterparts[physical_node] = ""
     if mode == "full random":
         print("len phys suppliers: {}".format(len(list(all_supplier_counterparts.keys()))))
