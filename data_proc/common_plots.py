@@ -519,11 +519,15 @@ def show_average_for_logic_version(logic_net_version, interlink_type, interlink_
     return data["x_axis"], lines
 
 
-def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False):
+def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None):
     all_data = dp.run_data()
     space_name = all_data["file_space_names"][space]
+    space_tag = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
+    space_dir_name = {(20, 500): "ln", (100, 100): "sq"}
     all_lines = {}
-    all_imax = list(range(1, 11))
+    if all_imax == None:
+        all_imax = list(range(1, 11))
+
     spaces = [space]
     #all_imax.remove(7)
     colors = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a']
@@ -532,8 +536,13 @@ def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_vers
             space_name = all_data["file_space_names"][space]
             x_axis, lines = show_average_for_logic_version(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, show=False, m_results=m_results)
             for line_name in lines.keys():
-                all_lines["imax {} {}".format(ndep, space)] = lines[line_name]
-    plot.n_line_plot(all_lines, x_axis, "All imax, {} {} lv {}".format(physical_model, space_name, logic_net_version), c_list=colors)
+                all_lines["{} {} {}".format(physical_model, r'$I_{max}$', ndep)] = lines[line_name]
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space_dir_name[space])
+    save_path = "../figures/{}/{}".format(save_to, fig_name)
+    if not save_fig:
+        save_path = None
+
+    plot.n_line_plot(all_lines, x_axis, "".format(physical_model, space_name, logic_net_version), ylabel=r'$\overline{G}_L$', c_list=colors, savefig_to=save_path, auto_close=autoclose)
 
 
 def get_curves_as_points(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=False, add_to_title=""):
@@ -554,7 +563,6 @@ def get_curves_as_points(logic_net_version, interlink_type, interlink_version, p
     file_name = file_name_1 + "{}" + file_name_2
     if m_results:
         file_name = "m_{}".format(file_name)
-
     data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
 
     lvs = []
@@ -1085,11 +1093,37 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
     plt.show()
 
 
-def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False):
-    model_colors = {"RNG": {"light": '#7aa711', "dark": '#006837', "st": '#556a4d'},
-                    "GG": {"light": '#ec7014', "dark": '#cc4c02', "st": '#695442'},
-                    "5NN": {"light": '#dd3497', "dark": '#ae017e', "st": '#824a81'}}
-    models = ["RNG", "GG", "5NN"]#
+def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False, legacy=True, models=[], img_ver=""):
+    low_lim = 10000000
+    high_lim = -1
+    if legacy:
+        lv = ""
+        interlink_type = "full_random"
+        interlink_v = ""
+    else:
+        lv = 1
+        interlink_type = "provider_priority"
+        interlink_v = 3
+
+
+    model_colors = {"RNG": {"st": '#7aa711'},
+                            "GPA": {"st": '#807dba'},
+                            "5NN": {"st": '#dd3497'},
+                            "YAO": {"st": '#6baed6'},
+                            "GG": {"st": '#ec7014'},
+                            "ER": {"st": '#B99D22'}}
+    if len(models) < 1:
+        models = ["RNG", "GG", "5NN"]#
+        model_colors = {"RNG": {"light": '#7aa711', "dark": '#006837', "st": '#556a4d'},
+                        "GG": {"light": '#ec7014', "dark": '#cc4c02', "st": '#695442'},
+                        "5NN": {"light": '#dd3497', "dark": '#ae017e', "st": '#824a81'}}
+    else:
+        model_colors = {"RNG": {"st": '#7aa711', "light": '#7aa711'},
+                        "GPA": {"st": '#807dba', "light": '#807dba'},
+                        "5NN": {"st": '#dd3497', "light": '#dd3497'},
+                        "YAO": {"st": '#6baed6', "light": '#6baed6'},
+                        "GG": {"st": '#ec7014', "light": '#ec7014'},
+                        "ER": {"st": '#B99D22', "light": '#B99D22'}}
     strategies = ["distance_aux", "local_hubs", "degree_aux", "random"]
     spaces = [space]#[(100, 100)]#,
     coord_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/node_locations/"
@@ -1107,7 +1141,13 @@ def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False):
             for st in strategies:
                 print("s: {}, m: {}, st: {}".format(s, m, st))
                 cost_list = []
-                lvs, curves_as_p = get_curves_as_points("", "full_random", "", m, ndep, s, st, legacy=True)
+                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
+                min_p = min(curves_as_p)
+                max_p = max(curves_as_p)
+                if min_p < low_lim:
+                    low_lim = min_p
+                if max_p > high_lim:
+                    high_lim = max_p
                 z = np.ones(len(curves_as_p))
                 for v in range(1, 11):
                     strategy_path = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/extra_edges/{}/candidates_{}x{}_exp_2.5_v{}_m_{}.csv".format(st, s[0], s[1], v, m)
@@ -1123,7 +1163,6 @@ def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False):
                 if st == "local_hubs":
                     point_size = 150
                 if st == "random":
-                    print(3)
                     point_size = 40
                 ax.scatter(cost_list, curves_as_p,   s=[x*point_size for x in z], alpha=1, marker=markers_dict[st], edgecolors=model_colors[m]["light"], color='white', linewidth=1.1
                            , label="{} + {}".format(m, st_name[st]))
@@ -1135,24 +1174,136 @@ def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False):
     ax.legend()
     ax.set_ylabel(r'$\overline{TG}_L$', fontsize=17)
     ax.set_xlabel(r'$\rho$', fontsize=16)
-    if space == (20, 500):
-        plt.ylim(310, 930)
+    if legacy:
+        if space == (20, 500):
+            plt.ylim(310, 930)
+        else:
+            plt.ylim(310, 930)
     else:
-        plt.ylim(310, 930)
+        plt.ylim(low_lim - 25, high_lim + 80)
     legend = ax.legend(ncol=3, bbox_to_anchor=(-0.01, 1.17), loc='upper left',  prop={'size': 10.7}, edgecolor="black")
     legend.get_frame().set_alpha(None)
     ax.tick_params(axis='both', which='major', labelsize=12)
     plt.xscale("log")
     if save_figure:
         s_name = {(20, 500): "ln", (100, 100): "sq"}
-        path = "../figures/paper"
-        name = "tgl_vs_max_link_length_{}.png".format(s_name[space])
+        if legacy:
+            path = "../figures/paper"
+            name = "tgl_vs_max_link_length_{}.png".format(s_name[space])
+        else:
+            path = "../figures/cap6"
+            name = "tgl_vs_max_link_length_{}_ndep_{}_{}.png".format(s_name[space], ndep, img_ver)
         plt.savefig(os.path.join(path, name), dpi=300, bbox_inches='tight', pad_inches=0.01)
 
     plt.show()
 
 
-def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
+def show_delta_tgl_vs_cost(space, ndep=3, save_figure=False, legacy=False, models=[], img_ver=""):
+    low_lim = 10000000
+    high_lim = -1
+    if legacy:
+        lv = ""
+        interlink_type = "full_random"
+        interlink_v = ""
+    else:
+        lv = 1
+        interlink_type = "provider_priority"
+        interlink_v = 3
+
+    model_colors = {"RNG": {"st": '#7aa711'},
+                            "GPA": {"st": '#807dba'},
+                            "5NN": {"st": '#dd3497'},
+                            "YAO": {"st": '#6baed6'},
+                            "GG": {"st": '#ec7014'},
+                            "ER": {"st": '#B99D22'}}
+    if len(models) < 1:
+        models = ["RNG", "GG", "5NN"]#
+        model_colors = {"RNG": {"light": '#7aa711', "dark": '#006837', "st": '#556a4d'},
+                        "GG": {"light": '#ec7014', "dark": '#cc4c02', "st": '#695442'},
+                        "5NN": {"light": '#dd3497', "dark": '#ae017e', "st": '#824a81'}}
+    else:
+        model_colors = {"RNG": {"st": '#7aa711', "light": '#7aa711'},
+                        "GPA": {"st": '#807dba', "light": '#807dba'},
+                        "5NN": {"st": '#dd3497', "light": '#dd3497'},
+                        "YAO": {"st": '#6baed6', "light": '#6baed6'},
+                        "GG": {"st": '#ec7014', "light": '#ec7014'},
+                        "ER": {"st": '#B99D22', "light": '#B99D22'}}
+    strategies = ["distance_aux", "local_hubs", "degree_aux", "random"]
+    spaces = [space]#[(100, 100)]#,
+    coord_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/node_locations/"
+    cm = 1 / 2.54
+    fig, ax = plt.subplots(figsize=(19 * cm, 12.5 * cm))
+
+    markers_dict = {"distance_aux": "^", "local_hubs": "*", "degree_aux": "s", "random": "o"}
+    st_name = {"distance_aux": "distance", "local_hubs": "local hubs", "degree_aux": "degree", "random": "random"}
+    x = 0
+    y = 1
+    for s in spaces:
+        for m in models:
+            point_1 = (0, 0)
+            point_2 = (0, 0)
+            lvs, curves_as_p_base = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, "simple graphs", legacy=legacy)
+            print(curves_as_p_base)
+            for st in strategies:
+                print("s: {}, m: {}, st: {}".format(s, m, st))
+                cost_list = []
+                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
+
+                z = np.ones(len(curves_as_p))
+                delta_curves_as_p = []
+                for i in range(len(curves_as_p)):
+                    delta_curves_as_p.append(curves_as_p[i] - curves_as_p_base[i])
+                cost_list = dp.get_costs_list(s, st, m)
+                print(curves_as_p)
+                print(cost_list)
+                print(delta_curves_as_p)
+                curves_as_p = delta_curves_as_p
+                print(curves_as_p)
+                min_p = min(curves_as_p)
+                max_p = max(curves_as_p)
+                if min_p < low_lim:
+                    low_lim = min_p
+                if max_p > high_lim:
+                    high_lim = max_p
+                #exit(44)
+
+                point_size = 60
+                if st == "local_hubs":
+                    point_size = 150
+                if st == "random":
+                    point_size = 40
+                ax.scatter(cost_list, curves_as_p,   s=[x*point_size for x in z], alpha=1, marker=markers_dict[st], edgecolors=model_colors[m]["light"], color='white', linewidth=1.1
+                           , label="{} + {}".format(m, st_name[st]))
+                if st == "distance_aux":
+                    point_1 = (np.mean(curves_as_p), np.mean(cost_list))
+                if st == "degree_aux":
+                    point_2 = (np.mean(curves_as_p), np.mean(cost_list))
+            ax.plot([point_1[y], point_2[y]], [point_1[x], point_2[x]], linestyle=":", c=model_colors[m]["st"])
+    ax.legend()
+    ax.set_ylabel(r'$\Delta\overline{TG}_L$', fontsize=17)
+    ax.set_xlabel('cost', fontsize=16)
+    if legacy:
+        if space == (20, 500):
+            plt.ylim(0, 500)
+        else:
+            plt.ylim(310, 930)
+    else:
+        plt.ylim(low_lim - 25, high_lim + 80)
+    legend = ax.legend(ncol=3, bbox_to_anchor=(-0.01, 1.17), loc='upper left',  prop={'size': 10.7}, edgecolor="black")
+    legend.get_frame().set_alpha(None)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    plt.xscale("log")
+    if save_figure:
+        s_name = {(20, 500): "ln", (100, 100): "sq"}
+
+        path = "../figures/cap5"
+        name = "delta_gl_ndep{}_{}_{}.png".format(ndep, img_ver, s_name[space])
+        plt.savefig(os.path.join(path, name), dpi=300, bbox_inches='tight', pad_inches=0.01)
+
+    plt.show()
+
+
+def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False, legacy=True):
     spaces = [(20, 500), (100, 100)]
     space_name = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
 
@@ -1160,7 +1311,13 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
     fig, ax = plt.subplots(figsize=(20 * cm, 14 * cm))
 
     #fig, ax = plt.subplots()
-
+    interlink_type = "full_random"
+    interlink_version = ""
+    lv = ""
+    if legacy == False:
+        interlink_type = "provider_priority"
+        interlink_version = 3
+        lv = 1
     if mod_random:
         #strategies = ["simple graphs", "random_distance", "distance_aux", "local_hubs", "random_local_hubs", "degree_aux", "random"]
         #st_name = {"simple graphs": "Simple graphs", "random_distance": "RD", "distance_aux": "Distance", "local_hubs": "Local hubs", "random_local_hubs": "RLH", "degree_aux": "Degree",
@@ -1183,7 +1340,7 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
         space_col += [space_name[space] for e in range(10)]
         for st in strategies:
 
-            lvs, curves_as_p = get_curves_as_points("", "full_random", "", model, ndep, space, st, legacy=True)
+            lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, st, legacy=legacy)
             if min_val > min(curves_as_p):
                 min_val = min(curves_as_p)
             if max_val < max(curves_as_p):
@@ -1238,11 +1395,26 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
             line.set_mec(col)
 
     #plt.title('Boxplot grouped by cls')  # You can change the title here
-    plt.ylim(min_val - 5, max_val + 5)
+    add = 0
+    if ndep == 3:
+        add = 20
+    if ndep == 5 and model in ["RNG", "GG", "YAO", "GPA", "ER"]:
+        add = 20
+    if ndep == 7 and model == "RNG":
+        add = 20
+    if ndep == 7 and model == "ER":
+        add = 5
+    if ndep == 10 and model == "RNG":
+        add = 28
+    if ndep == 10 and model == "GPA":
+        add = 35
+    if ndep == 10 and model == "ER":
+        add = 5
+    plt.ylim(min_val - 5, max_val + 5 + add)
     handles, labels = ax.get_legend_handles_labels()
-    new_handles = [handles[0], handles[1]]
-    new_labels = ["{} {}".format(model, labels[0]), "{} {}".format(model, labels[1])]
-    ax.legend(new_handles, new_labels, prop={'size': 12})
+    new_handles = [handles[1], handles[0]]
+    new_labels = ["{} {}".format(model, labels[1]), "{} {}".format(model, labels[0])]
+    ax.legend(new_handles, new_labels, prop={'size': 12}, loc='upper left')
 
     plt.ylabel(r'$\overline{TG}_{L}$', fontsize=18)
     if mod_random:
@@ -1254,10 +1426,16 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False):
     else:
         plt.xlabel("")
     if save_figure:
-        path = "../figures/paper"
-        name = "tgl_boxplot_{}.png".format(model)
-        if mod_random:
-            name = "mod_random_{}".format(name)
+        if legacy:
+            path = "../figures/paper"
+            name = "tgl_boxplot_{}.png".format(model)
+            if mod_random:
+                name = "mod_random_{}".format(name)
+        else:
+            path = "../figures/cap6"
+            name = "tgl_boxplot_{}_ndep{}.png".format(model, ndep)
+            if mod_random:
+                name = "mod_random_{}".format(name)
         plt.savefig(os.path.join(path, name), dpi=300, bbox_inches='tight', pad_inches=0.002)
     plt.show()
 
@@ -1416,6 +1594,7 @@ def gl_compare_strategies(lv, space, model, imax, debug=False, save_fig=True):
 
 
 def la_sa_comparison_scatter_plot(ndep=3, model=None, save_fig=False, strategy="simple graphs", autoclose=False):
+    debug = True
     cm = 1 / 2.54
     fig, ax = plt.subplots(figsize=(20*cm, 15*cm))
     number_of_physical_nodes = 2000
@@ -1427,7 +1606,7 @@ def la_sa_comparison_scatter_plot(ndep=3, model=None, save_fig=False, strategy="
         models = [model]
     for model in models:
 
-        print("{}, {}".format(model, ndep))
+        #print("{}, {}".format(model, ndep))
         upper, mid, lower, lower_gl_delta, higher_gl_delta = dp.compare_seismic_attacks_with_localized_attacks(model, ndep, strategy=strategy, lv=1)
 
         x_axis = [x[1]/number_of_physical_nodes for x in higher_gl_delta]
@@ -1459,7 +1638,13 @@ def la_sa_comparison_scatter_plot(ndep=3, model=None, save_fig=False, strategy="
     ax.axhline(-0.75, color='gray', linewidth=1, linestyle='dotted')
     ax.axhline(-0.5, color='gray', linewidth=1, linestyle='dotted')
     ax.axhline(-0.25, color='gray', linewidth=1, linestyle='dotted')
-    plt.ylim(min_gl - 0.05, max_gl + 0.05)
+    if ndep != 10:
+        plt.ylim(min_gl - 0.05, max_gl + 0.05)
+    else:
+        plt.ylim(- 1.0 * (max_gl + 0), max_gl + 0.17)
+    if debug:
+        print("{} ({},{})".format(strategy, round(min_gl, 5), max_gl))
+
     if ndep > 3:
         plt.xlim(- 0.0008, 0.127)
     else:

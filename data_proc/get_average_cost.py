@@ -55,6 +55,10 @@ def check_cost_efficiency(add_to_title=""):
                                                       file_name)
 
                     costs_lists.append(cost)
+                print(addition_strategy)
+                print(model)
+                print(costs_lists)
+
                 mean_cost = (np.mean(costs_lists)).round(decimals=2)
                 standard_deviation_cost = (np.std(costs_lists)).round(decimals=2)
                 average_costs[geometry][addition_strategy][model] = {"mean": mean_cost,
@@ -74,7 +78,7 @@ def check_cost_efficiency(add_to_title=""):
                     delta_tgl = st_p_means - o_p_means
 
                     average_efficiency[geometry][addition_strategy][model][ndep] = (((delta_tgl / average_costs[geometry][addition_strategy][model]["mean"]) * 1000)).round(decimals=2)
-
+    exit(4)
                     #if model == 'RNG' and addition_strategy == 'distance_aux':
                     #    print("Imax = {}, s = {}, st = {}".format(ndep, geometry, addition_strategy))
                     #    #print("Model: {}, base tgl: {} ({})".format(model, (o_p_means).round(decimals=2), o_p_std))
@@ -280,5 +284,5 @@ def make_cost_table(check_strategies=False, title_mod="", legacy=False):
                 save_file.close()
 
 
-#check_cost_efficiency()
-make_cost_table(check_strategies=True, title_mod="cl_", legacy=True)
+
+#make_cost_table(check_strategies=True, title_mod="cl_", legacy=True)

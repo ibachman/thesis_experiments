@@ -201,7 +201,7 @@ def double_ax_plot_line(lines_top_ax, lines_bottom_ax, x_axis, x_label="", y_lab
 
 def n_line_plot(lines, x_axis, title, errors=None, color_pairs=False, double_pair_color=False, ylim=[0,1],
                 xlim=[0,1],xlabel="(1 - p)", ylabel=r'$G_L$', c_list=None, line_style=None,
-                line_size=None, marker_size=None, markers=None, deg_dist=False, savefig_to=None, use_titles=None, err_c=None):
+                line_size=None, marker_size=None, markers=None, deg_dist=False, savefig_to=None, use_titles=None, err_c=None, auto_close=False):
     custom_colors = ['#1b9e77', '#d95f02', '#7570b3', '#2c7fb8', '#253494','#dd1c77']
     custom_marker_color = ['#1b9e77', '#d95f02', '#7570b3','#1b9e77', '#d95f02', '#7570b3','#1b9e77', '#d95f02', '#7570b3']
     custom_marker = ['o', "^", 'o', "^",'o', "^",'o', "^",'o', "^",'o', "^",]
@@ -436,7 +436,10 @@ def n_line_plot(lines, x_axis, title, errors=None, color_pairs=False, double_pai
     if savefig_to:
         plt.savefig(savefig_to, dpi=300, bbox_inches='tight', pad_inches=0.002)
     # function to show the plot
-    plt.show()
+    if auto_close:
+        plt.close()
+    else:
+        plt.show()
 
 
 def plot_bar(labels, n_bars, plot_list, data_labels, ylabel, xlabel, title, yerr_list=None, colors=None, ax=None):
@@ -599,8 +602,16 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             title = "Localized attack over {} systems".format(shape)
             if strategy != "simple graphs":
                 title = "Localized attack over {} + {} systems".format(shape, strategy)
-            up_group += [(1-x) for x in gl_inv if (1-x) > 0.5]
-            low_group += [(1-x) for x in gl_inv if (1-x) <= 0.5]
+            lim = 0.5034
+            up_group += [(1-x) for x in gl_inv if (1-x) > lim]
+            low_group += [(1-x) for x in gl_inv if (1-x) <= lim]
+
+            current_model_up_group = [(1-x) for x in gl_inv if (1-x) > lim]
+            current_model_low_group = [(1-x) for x in gl_inv if (1-x) <= lim]
+            if current_model_low_group == []:
+                current_model_low_group = [-1]
+            print("{} HDLA range: ({},{}) , {} non-HDLA range: ({},{})".format(model, min(current_model_low_group), max(current_model_low_group), model, min(current_model_up_group),
+                                                                               max(current_model_up_group)))
 
             gl_list = [(1 - x) for x in gl_inv]
 
@@ -680,7 +691,7 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
                     gl_aux_2.append(1 - gl_inv[k])
                     if is_seismic:
                         Mw_high.append(other_data["Mw"][k])
-                    if gl_inv[k] > 0.5:
+                    if gl_inv[k] > 0.5034:
                         print("mlem")
             if is_seismic:
                 if len(Mw_low) > 0:
@@ -714,9 +725,9 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
 
             blep = []
             for k in range(len(nr)):
-                if gl_inv[k] >= 0.5 and betweenness[k] < 0.35:
+                if gl_inv[k] >= 0.503 and betweenness[k] < 0.35:
                     blep.append(k)
-            blepi = [x for x in gl_inv if x >= 0.5]
+            blepi = [x for x in gl_inv if x >= 0.503]
             print("{} of {} do not remove L50".format(len(blep), len(blepi)))
 
             plt.scatter(p, [(1 - x) for x in gl_inv], s=[x * 10 for x in z], alpha=1, c=betweenness, cmap='viridis_r',
@@ -756,11 +767,11 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             c = []
             for k in range(len(nr)):
                 dif = dp.difference_on_logic_nodes_removed(nr[k], geometry, ndep, vers[k], model)
-                if dif < 20 and (1-gl_inv[k]) < 0.5:
+                if dif < 20 and (1-gl_inv[k]) < 0.503:
                     print(vers[k])
                     print(nr[k])
                     print(dif)
-                elif dif > 20 and (1-gl_inv[k] < 0.5):
+                elif dif > 20 and (1-gl_inv[k] < 0.503):
                     print("high")
                     print(dif)
                 c.append(dif)
@@ -821,9 +832,15 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             print("low range ({},{})".format(min(low_group), max(low_group)))
 
         # order: 1- RNG (0), GG (1), 5NN(2) 2- GG(3), 5NN(4), RNG(5) 3- 5NN(6), RNG(7), GG(8)
-        order_list = ["RNG", "GG", "5NN", "ER", "YAO", "GPA",
-                      "GG", "ER", "YAO", "GPA", "5NN", "RNG",
-                      "5NN", "RNG", "ER", "YAO", "GPA", "GG"]
+        if len(models) == 3:
+            order_list = [
+                "GG", "5NN", "RNG",
+                "5NN", "RNG", "GG",
+                "RNG", "GG", "5NN"]
+        else:
+            order_list = ["RNG", "GG", "5NN", "ER", "YAO", "GPA",
+                          "GG", "ER", "YAO", "GPA", "5NN", "RNG",
+                          "5NN", "RNG", "ER", "YAO", "GPA", "GG"]
         total_points = 0
         for i in range(len(order_list)):
             total_points += len(model_map_shuffle_dict[model][i % 3]["p"])
@@ -851,11 +868,31 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     plt.ylim(-0.01, 1.02)
     if geometry == "20x500":
         if not is_seismic:
-            plt.xlim(0.039, 0.0905)
+            if radius == 20:
+                plt.xlim(0.039, 0.0905)
+            elif radius == 4:
+                plt.xlim(0.0009, 0.012)
+            elif radius == 8:
+                plt.xlim(0.008, 0.03)
+            elif radius == 12:
+                plt.xlim(0.018, 0.0465)
+            elif radius == 16:
+                plt.xlim(0.031, 0.072)
         else:
             plt.xlim(-0.001, 0.14)
+
     else:
-        plt.xlim(0.0455, 0.1465)
+
+        if radius == 20:
+            plt.xlim(0.0455, 0.1465)
+        elif radius == 4:
+            plt.xlim(0.0, 0.012)
+        elif radius == 8:
+            plt.xlim(0.008, 0.03)
+        elif radius == 12:
+            plt.xlim(0.021, 0.061)
+        elif radius == 16:
+            plt.xlim(0.032, 0.097)
 
     plt.ylabel(r'$G_{L}$', fontsize=18)
     plt.xlabel('(1 - p)', fontsize=15)
@@ -870,11 +907,20 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
     st_name = st_name[0]
     st_name = st_name.replace("_aux", "")
     space_fig_name = {"20x500": "ln", "100x100": "sq"}
-    fig_name = 'cap{}_scatter_ndep_{}_{}_{}_{}.png'.format(chapter,ndep, map, st_name, space_fig_name[geometry])
 
-    if save_fig:
+    if save_fig and len(models) > 3:
+        fig_name = 'cap{}_scatter_ndep_{}_{}_{}_{}.png'.format(chapter, ndep, map, st_name, space_fig_name[geometry])
         print(fig_name)
         fig_path = '../figures/cap{}/{}'.format(chapter, fig_name)
+        plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
+    elif save_fig and len(models) <= 3:
+        add_on = ""
+        if is_seismic:
+            add_on = "_seismic"
+        fig_name = 'scatter_ndep_{}_{}_{}_{}{}.png'.format(ndep, map, st_name, space_fig_name[geometry], add_on)
+
+        fig_path = '../figures/NetsciX/{}'.format(fig_name)
+        print(fig_path)
         plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
     plt.title("")
 
@@ -897,7 +943,7 @@ def scatter_plot(models, geometry, strategy, ndep, radius, map="models", legacy=
             return HDLA
 
 
-def write_stuff(geometry, strategy, ndep=3, lv=1, use_legacy=False, use_model=[], is_seismic=False, mode="minimal"):
+def write_stuff(geometry, strategy, ndep=3, lv=1, use_legacy=False, use_model=[], is_seismic=False, mode="minimal", radius=20):
     print(ndep)
     all_data = dp.run_data()
     if len(use_model) > 0:
@@ -905,13 +951,25 @@ def write_stuff(geometry, strategy, ndep=3, lv=1, use_legacy=False, use_model=[]
     else:
         models = all_data["models"]
 
-    radius = 20
-    print("Starting {}, {} ...".format(strategy, geometry))
+    #radius = 20
+    print("Starting {}, {}, r={} ...".format(strategy, geometry, radius))
     start_time = datetime.datetime.now()
     versions_time = []
     scatter_plot_path = all_data["scatter_plot_path"][strategy]
 
     for model in models:
+        if use_legacy:
+            f_name = "legacy_"
+        if lv:
+            f_name = "lv{}_".format(lv)
+        else:
+            f_name = ""
+        f_name += "scatter_plot_data_model_{}_ndep_{}_geometry_{}_radius_{}_st_{}.csv".format(model, ndep, geometry, radius, strategy)
+        if is_seismic:
+            file_path = os.path.join(scatter_plot_path, "seismic", f_name)
+        else:
+            file_path = os.path.join(scatter_plot_path, f_name)
+        print("results will be saved in: {}".format(file_path))
 
         gl_inv, nodes_removed, nr, vers, other = dp.correlated_damage_vs_nodes_removed(model, geometry, strategy, ndep, radius, legacy=use_legacy, lv=lv, is_seismic=is_seismic)
 
@@ -970,17 +1028,7 @@ def write_stuff(geometry, strategy, ndep=3, lv=1, use_legacy=False, use_model=[]
             else:
                 physic_damage.append(1 - dp.functional_physical_nodes_after_removal(nr[k], model, vers[k], ndep, geometry, strategy=strategy))
         end_time = datetime.datetime.now()
-        if use_legacy:
-            f_name = "legacy_"
-        if lv:
-            f_name = "lv{}_".format(lv)
-        else:
-            f_name = ""
-        f_name += "scatter_plot_data_model_{}_ndep_{}_geometry_{}_radius_{}_st_{}.csv".format(model, ndep, geometry, radius, strategy)
-        if is_seismic:
-            file_path = os.path.join(scatter_plot_path, "seismic", f_name)
-        else:
-            file_path = os.path.join(scatter_plot_path, f_name)
+
         print("writing '{}'".format(file_path))
 
         with open(file_path, mode='w') as file:

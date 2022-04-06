@@ -1,5 +1,6 @@
 import data_proc.common_plots as cp
 import data_proc.data_processing as dp
+import data_proc.plotting as plt
 import numpy as np
 
 
@@ -107,11 +108,15 @@ def length_gl_correlation_figure(save_fig=True):
     cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=3, save_figure=save_fig)
 
 
-def cap_random_boxplots(save_fig=True):
+def cap_random_boxplots(save_fig=True, legacy=True, ndep=3):
     mr = True
-    cp.show_legacy_tgl_boxplot("RNG", ndep=3, mod_random=mr, save_figure=save_fig)
-    cp.show_legacy_tgl_boxplot("GG", ndep=3, mod_random=mr, save_figure=save_fig)
-    cp.show_legacy_tgl_boxplot("5NN", ndep=3, mod_random=mr, save_figure=save_fig)
+    cp.show_legacy_tgl_boxplot("RNG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("GG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("5NN", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    if not legacy:
+        cp.show_legacy_tgl_boxplot("YAO", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+        cp.show_legacy_tgl_boxplot("GPA", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+        cp.show_legacy_tgl_boxplot("ER", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
 
 
 def original_boxplots(save_fig=True):
@@ -121,5 +126,18 @@ def original_boxplots(save_fig=True):
     cp.show_legacy_tgl_boxplot("5NN", ndep=3, mod_random=mr, save_figure=save_fig)
 
 
-cap_random_boxplots(save_fig=False)
+def netsci_scatter_plots(save_fig=True):
+    for imax in [3, 10]:
+        for seismic in [True, False]:
+            plt.scatter_plot(["RNG", "GG", "5NN"], "20x500", "simple graphs", imax, 20, map="models", legacy=False, lv=1, save_fig=save_fig, return_data=False, is_seismic=seismic, chapter=6,
+                             autoclose=False)
+            plt.scatter_plot(["RNG", "GG", "5NN"], "20x500", "simple graphs", imax, 20, map="find", legacy=False, lv=1, save_fig=save_fig, return_data=False, is_seismic=seismic, chapter=6,
+                             autoclose=False)
+            if seismic:
+                plt.scatter_plot(["RNG", "GG", "5NN"], "20x500", "simple graphs", imax, 20, map="magnitude", legacy=False, lv=1, save_fig=save_fig, return_data=False, is_seismic=seismic, chapter=6,
+                                 autoclose=False)
 
+
+#netsci_scatter_plots(save_fig=False)
+plt.scatter_plot(["RNG", "GG", "5NN"], "20x500", "simple graphs", 3, 20, map="models", legacy=False, lv=1, save_fig=False, return_data=False, is_seismic=True, chapter=6, autoclose=False)
+plt.scatter_plot(["RNG", "GG", "5NN"], "20x500", "simple graphs", 10, 20, map="models", legacy=False, lv=1, save_fig=False, return_data=False, is_seismic=True, chapter=6, autoclose=False)

@@ -5,6 +5,7 @@ import data_proc.common_plots as cp
 import data_proc.plotting as pt
 import data_proc.LA_vs_RA_plots as vs
 import data_proc.data_processing as dp
+import numpy as np
 #import common_plots as cp
 #import plotting as pt
 #import LA_vs_RA_plots as vs
@@ -14,11 +15,11 @@ import data_proc.data_processing as dp
 ppv = 3
 
 
-def pre_process_LA_scatter_data(model, ndep=3, strategy=["distance_aux", "local_hubs", "degree_aux", "random", "simple graphs"]):
+def pre_process_LA_scatter_data(model, radius=20, ndep=3, strategy=["distance_aux", "local_hubs", "degree_aux", "random", "simple graphs"]):
     geometry = ["20x500", "100x100"]
     for g in geometry:
         for st in strategy:
-            pt.write_stuff(g, st, use_model=[model], ndep=ndep)
+            pt.write_stuff(g, st, use_model=[model], ndep=ndep, radius=radius)
 
 
 def pre_process_seismic_scatter_data(model, ndep=3, strategy=["distance_aux", "local_hubs", "degree_aux", "random", "simple graphs"]):
@@ -79,6 +80,127 @@ def get_double_delta_gl_la_ra_cap6(save_figure=True, lv=1):
             vs.plot_la_ra_delta_for_strategy(st, imax, models, is_legacy=False, lv=lv, save_fig=save_figure)
 
 
+def get_cap_random_boxplots_cap5(save_fig=True, ndep=3):
+    mr = True
+    legacy = False
+    cp.show_legacy_tgl_boxplot("RNG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("GG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("5NN", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("YAO", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("GPA", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("ER", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+
+
+def get_length_correlation_figure_cap5(save_fig=True, ndep=3):
+    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1)
+    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2)
+    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1)
+    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2)
+
+
+def get_table_link_length_original_strategies_cap5():
+    models = ["RNG", "GG", "5NN", "GPA", "YAO", "ER"]  #
+    strategies = ["distance_aux", "local_hubs", "degree_aux", "random"]
+    spaces = [(20, 500), (100, 100)]  # [(100, 100)]#,
+    coord_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/node_locations/"
+    max_link_lengths = {}
+    for s in spaces:
+        max_link_lengths[s] = {}
+        for m in models:
+            max_link_lengths[s][m] = {}
+            for st in strategies:
+                max_link_lengths[s][m][st] = []
+                for v in range(1, 11):
+                    strategy_path = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/extra_edges/{}/candidates_{}x{}_exp_2.5_v{}_m_{}.csv".format(st, s[0], s[1], v, m)
+                    edge_list = cp.load_edges_as_list(strategy_path)
+                    cord_name = "nodes_{}x{}_exp_2.5_v{}.csv".format(s[0], s[1], v)
+                    coord_dict = cp.get_list_of_coordinates_from_csv(coord_dir + cord_name)
+                    all_lengths = cp.all_link_lengths(coord_dict, edge_list)
+                    this_version_max_link_length = max(all_lengths)
+                    max_link_lengths[s][m][st].append(this_version_max_link_length)
+    all_data = dp.run_data()
+    print("\\begin{table}[h]")
+    print("\\centering")
+    print("\\makebox[\\linewidth]{\\small")
+    print("\\tabcolsep = 0.11cm")
+    print("\\begin{tabular}{|l|l|l|l|l|l|l|l|}")
+    print("\\hline")
+    print("Space                   & Strategy   & RNG   & GG    & 5NN & GPA & YAO & ER   \\\\ \\hline")
+    for s in spaces:
+        s_name = all_data["figure_space_names"][s]
+        line = "\\multirow{4}{*}{" + s_name + "} "
+        for st in strategies:
+
+            line += "& {} ".format(all_data["strategies_used_names"][st])
+            for m in models:
+                mean = round(np.mean(max_link_lengths[s][m][st]), 2)
+                std = round(np.std(max_link_lengths[s][m][st]), 2)
+                line += "& {} ({})".format(mean, std)
+            if st != "random":
+                line += "\\\\ \\cline{2-8}"
+            else:
+                line += "\\\\ \\hline"
+            print(line)
+            line = ""
+    print("\\end{tabular}")
+    print("}")
+    print("\\caption{}")
+    print("\\label{}")
+    print("\\end{table}")
+
+def make_link_length_table_random_modifications_cap5():
+
+    models = ["RNG", "GG", "5NN", "GPA", "YAO", "ER"]  #
+    strategies = ["0.01", "0.05", "0.25", "0.5", "0.75"]
+    spaces = [(20, 500), (100, 100)]  # [(100, 100)]#,
+    coord_dir = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/node_locations/"
+    max_link_lengths = {}
+    for s in spaces:
+        max_link_lengths[s] = {}
+        for m in models:
+            max_link_lengths[s][m] = {}
+            for st in strategies:
+                max_link_lengths[s][m][st] = []
+                for v in range(1, 11):
+                    strategy_path = "/Users/ivana/PycharmProjects/thesis_experiments/networks/physical_networks/extra_edges/random/candidates_cl_cap{}_{}x{}_exp_2.5_v{}_m_{}.csv".format(st, s[0],
+                                                                                                                                                                                         s[1], v, m)
+                    edge_list = cp.load_edges_as_list(strategy_path)
+                    cord_name = "nodes_{}x{}_exp_2.5_v{}.csv".format(s[0], s[1], v)
+                    coord_dict = cp.get_list_of_coordinates_from_csv(coord_dir + cord_name)
+                    all_lengths = cp.all_link_lengths(coord_dict, edge_list)
+                    this_version_max_link_length = max(all_lengths)
+                    max_link_lengths[s][m][st].append(this_version_max_link_length)
+    all_data = dp.run_data()
+    print("\\begin{table}[h]")
+    print("\\centering")
+    print("\\makebox[\\linewidth]{\\small")
+    print("\\tabcolsep = 0.11cm")
+    print("\\begin{tabular}{|l|l|l|l|l|l|l|l|}")
+    print("\\hline")
+    print("Space                   & Max. link length   & RNG   & GG    & 5NN  & GPA & YAO & ER  \\\\ \\hline")
+    for s in spaces:
+        s_name = all_data["figure_space_names"][s]
+        line = "\\multirow{4}{*}{" + s_name + "} "
+        for st in strategies:
+
+            line += "& {} ".format(all_data["strategies_used_names"][st])
+            for m in models:
+                mean = round(np.mean(max_link_lengths[s][m][st]), 2)
+                std = round(np.std(max_link_lengths[s][m][st]), 2)
+                line += "& {} ({})".format(mean, std)
+            if st != "random":
+                line += "\\\\ \\cline{2-8}"
+            else:
+                line += "\\\\ \\hline"
+            print(line)
+            line = ""
+    print("\\end{tabular}")
+    print("}")
+    print("\\caption{}")
+    print("\\label{}")
+    print("\\end{table}")
+
+
 def get_scatter_plot_base_cap_6(save_figure=True, imax=3, strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):
     geometries = ["20x500", "100x100"]
     radius = 20
@@ -87,20 +209,23 @@ def get_scatter_plot_base_cap_6(save_figure=True, imax=3, strategies=["simple gr
             pt.scatter_plot(["5NN", "GG", "RNG", "GPA", "YAO", "ER"], s, st, imax, radius, map="models", legacy=False, save_fig=save_figure)
 
 
-def get_scatter_plot_find_cap_6(save_figure=True, imax=3, strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):
+def get_scatter_plot_find_cap_6(save_figure=True, imax=3, strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"], radius=20):
     geometries = ["20x500", "100x100"]
-    radius = 20
     for s in geometries:
+        print("---------------> {}".format(s))
         for st in strategies:
             pt.scatter_plot(["5NN", "GG", "RNG", "GPA", "YAO", "ER"], s, st, imax, radius, map="find", legacy=False, save_fig=save_figure)
 
 
-def get_hdla_tables(imax):
+def get_hdla_tables_cap6(imax, radius=20):
+    a = radius/20
+    if a == 1.0:
+        a = "1"
     number_of_hdla = {}
     hdla_range = {}
     strategies = ["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]
     st_name = {"simple graphs": "Original", "distance_aux": "Distance", "local_hubs": "Local hubs", "degree_aux": "Degree", "random": "Random"}
-    radius = 20
+
     geometries = ["20x500", "100x100"]
     s_name = {"20x500": "(1:25)", "100x100": "(1:1)"}
     for s in geometries:
@@ -114,7 +239,7 @@ def get_hdla_tables(imax):
             hdla_range[s][st]['low'] = lower
     # print table
     ## headers
-    print("\\begin{table}[]")
+    print("\\begin{table}[h]")
     print("\\centering")
     print("\\makebox[\\linewidth]{\\small")
     print("\\tabcolsep = 0.11cm")
@@ -137,7 +262,13 @@ def get_hdla_tables(imax):
                 line += "& {} ".format(number_of_hdla[s][st][hdla_col])
             for this_range in ordered_ranges:
                 if len(hdla_range[s][st][this_range]) > 0:
-                    line += "& ({},{}) ".format(round(min(hdla_range[s][st][this_range]), 3), round(max(hdla_range[s][st][this_range]), 3))
+                    min_r = round(min(hdla_range[s][st][this_range]), 3)
+                    max_r = round(max(hdla_range[s][st][this_range]), 3)
+                    if 0.5034 > min_r >= 0.503:
+                        min_r = 0.5
+                    if 0.5034 > max_r >= 0.503:
+                        max_r = 0.5
+                    line += "& $({},{})$ ".format(min_r, max_r)
                 else:
                     line += "& $\phi$ "
             if st != "random":
@@ -148,8 +279,9 @@ def get_hdla_tables(imax):
             line = "                        "
     print("\\end{tabular}")
     print("}")
-    print("\\caption{$G_L$ ranges of HDLA, and LA minus HDLA (Non-HDLA) of systems with and without physical links added for $I_{max}=" + str(imax) + "$, and $a=1$.}")
-    print("\\label{tab:LA-ranges-imax-" + str(imax) + "}")
+    print("\\caption[$G_L$ ranges of HDLA and non-HDLA $(I_{max}=3,a=" + str(a) + ")$]{$G_L$ ranges of HDLA, and LA minus HDLA (Non-HDLA) of systems with and without physical links added for $I_{"
+                                                                               "max}=" + str(imax) + "$, and $a=" + str(a) + "$.}")
+    print("\\label{tab:LA-ranges-imax-" + str(imax) + "-a" + str(a) + "}")
     print("\\end{table}")
     #print(max(hdla_range["20x500"]["simple graphs"]['low']))
 
@@ -285,7 +417,7 @@ def make_seismic_table_simple_graphs_cap_7(st="simple graphs"):
 
 def make_seismic_table_all_strategies_cap_7(imax=3):
     st_names_dict = {"simple graphs": "Original", "distance_aux": "Distance", "local_hubs": "Local hubs", "degree_aux": "Degree", "random": "Random"}
-    print("\\begin{table}[]")
+    print("\\begin{table}[h]")
     print("\\centering")
     print("\\small")
     print("\\tabcolsep = 0.11cm")
@@ -307,14 +439,19 @@ def make_seismic_table_all_strategies_cap_7(imax=3):
 
     print("\\end{tabular}")
 
-    print("\\caption{Summary table for simple attacks ($I_{max}=" + str(imax) + "$).}")
+    print("\\caption[Seismic attacks summary after adding extra physical links ($I_{max}=" + str(imax) + "$)]{Summary of seismic attacks performed over systems with extra physical links added,"
+                                                                                                         " and $I_{max}=" + str(imax) + "$.}")
 
     print("\\label{tab:seismic-summary-imax-" + str(imax) + "}")
     print("\\end{table}")
 
 
-def la_sa_comparison_scatter_cap_7(save_fig=True, sclose=False, st="simple graphs"):
-    for imax in [3, 5, 7, 10]:
+def la_sa_comparison_scatter_cap_7(save_fig=True, sclose=False, st="simple graphs", ndep=None):
+    if ndep is None:
+        imaxes = [3, 5, 7, 10]
+    else:
+        imaxes = [ndep]
+    for imax in imaxes:
         cp.la_sa_comparison_scatter_plot(ndep=imax, save_fig=save_fig, autoclose=sclose, strategy=st)
 
 
@@ -364,7 +501,7 @@ def make_la_sa_comparison_table_all_strategies_cap_7(imax):
     models = ["RNG", "GG", "GPA", "5NN", "YAO", "ER"]
 
     st_names_dict = {"simple graphs": "Original", "distance_aux": "Distance", "local_hubs": "Local hubs", "degree_aux": "Degree", "random": "Random"}
-    print("\\begin{table}[]")
+    print("\\begin{table}[h]")
     print("\\centering")
     print("\\small")
     print("\\tabcolsep = 0.11cm")
@@ -395,14 +532,107 @@ def make_la_sa_comparison_table_all_strategies_cap_7(imax):
         print(line_mid)
         print(line_low)
 
-    print("\\hline")
     print("\\end{tabular}")
 
-    print("\\caption{Comparison between localized attacks and seismic attacks ($I_{max}=" + str(imax) + "$).}")
+    print("\\caption[Comparison between localized attacks and seismic attacks after adding extra physical links ($I_{max}=" + str(imax) + "$)]{Comparison between localized attacks and seismic "
+                                                                                                                                          "attacks for systems with extra physical links added, "
+                                                                                                                                          "and $I_{max}=" + str(imax) + "$.}")
 
     print("\\label{tab:sa-la-comparison-imax-" + str(imax) + "}")
     print("\\end{table}")
 
 
-#get_double_curves_st_comp_cap5(save_figure=True, lv=1)
+def make_supplementary_images(chapter_number, save_fig=True, auto_save=False):
+    interlink_type = "provider_priority"
+    interlink_version = 3
+    versions = list(range(1, 11))
+    for logic_net_version in versions:
+        for space in [(20, 500), (100, 100)]:
+            for physical_model in ["RNG", "GG", "5NN", "GPA", "YAO", "ER"]:
+                if chapter_number == 3:
+                    strategy = "simple graphs"
+                    cp.show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False,
+                                                      save_to="supplementary/cap{}".format(chapter_number), save_fig=save_fig, autoclose=auto_save)
+                elif chapter_number == 5:
+                    if logic_net_version > 1:
+                        return
+                    for strategy in ["distance_aux", "local_hubs", "degree_aux", "random"]:
+                        cp.show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False,
+                                                          save_to="supplementary/cap{}".format(chapter_number), save_fig=save_fig, autoclose=auto_save, all_imax=[3, 5, 7, 10])
+
+
+def latex_figures(space, chapter, logic_net_version, strategy):
+
+    print("\\begin{figure}[t!]")
+    print("\\centering")
+    print("\\makebox[\\linewidth]{")
+    print(" \\subfigure[RNG]{")
+    physical_model = "RNG"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}")
+    print(" \\subfigure[GG]{")
+    physical_model = "GG"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}}")
+
+    print("\\centering")
+    print("\\makebox[\\linewidth]{")
+    print(" \\subfigure[5NN]{")
+    physical_model = "5NN"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}")
+    print(" \\subfigure[YAO]{")
+    physical_model = "YAO"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}}")
+
+    print("\\centering")
+    print("\\makebox[\\linewidth]{")
+    print(" \\subfigure[GPA]{")
+    physical_model = "GPA"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}")
+    print(" \\subfigure[ER]{")
+    physical_model = "ER"
+    fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space)
+    print("  \\includegraphics[width = 0.47\\linewidth]{" + "img_cap{}/{}".format(chapter, fig_name) + "}}}")
+
+    s = {"ln": "(1:25)", "sq": "(1:1)"}
+    st = {"distance_aux": "Distance", "local_hubs": "Local hubs", "degree_aux": "Degree", "random": "Random"}
+    if strategy == "simple graphs":
+        short_caption = "Average robustness $s=\\text{" + s[space] + "}, q=" + str(logic_net_version) + "$"
+        long_caption = "Average robustness by model for systems built over a {} space, and logical network version {}.".format(s[space], logic_net_version)
+        label = "fig:line_lv{}_{}".format(logic_net_version, space)
+    else:
+        short_caption = "Average robustness $s=\\text{" + s[space] + "}, q=" + str(logic_net_version) + ", st=\\text{" + st[strategy] + "}$"
+        long_caption = "Average robustness by model for systems built over a {} space, and logical network version {} after adding extra physical links according to {} strategy.".format(
+            s[space], logic_net_version, st[strategy])
+        label = "fig:line_lv{}_{}_{}".format(logic_net_version, space, st[strategy])
+    print("\\caption[" + short_caption + "]{" + long_caption + "}")
+    print("\\label{" + label + "}")
+    print("\\end{figure}")
+
+
+def get_all_supplementary_latex_for_cap3():
+    for space in ["ln", "sq"]:
+        for lv in range(1, 11):
+            latex_figures(space, "3", lv, "simple graphs")
+
+
+def get_all_supplementary_latex_for_cap5():
+    for strategy in ["distance_aux", "local_hubs", "degree_aux", "random"]:
+        for space in ["ln", "sq"]:
+            latex_figures(space, "5", "1", strategy)
+
+
+def get_delta_gl_vs_cost_cap5(save_fig=True):
+    spaces = [(20, 500), (100, 100)]
+    ndeps = [3, 5, 7, 10]
+    for space in spaces:
+        for ndep in ndeps:
+            cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["RNG", "GG", "5NN"], img_ver=1, save_figure=save_fig)
+            cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["GPA", "YAO", "ER"], img_ver=2, save_figure=save_fig)
+
+
+#get_delta_gl_vs_cost_cap5(save_fig=True)
 

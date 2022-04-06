@@ -156,6 +156,34 @@ def get_line_number_with(node_damage_fraction, number_of_nodes):
     return numpy.ceil(node_damage_fraction*number_of_nodes)
 
 
+def get_costs_list(geometry, addition_strategy, model, add_to_title=""):
+    all_data = run_data()
+    addition_strategies = all_data["extra_edges_path"]
+    nodes_allocations = all_data["nodes_allocations"]
+    path = addition_strategies[addition_strategy]
+    versions = all_data["versions"]
+    exp = all_data["exp"]
+    # auxiliary array of costs
+    if len(add_to_title) > 0:
+        add_1 = "_{}".format(add_to_title)
+        add_2 = "d{}_".format(add_to_title)
+        all_strategies = ["distance_aux"]
+    else:
+        add_1 = add_2 = ""
+        all_strategies = ['distance_aux', 'local_hubs', 'degree_aux', 'random']#addition_strategies.keys()
+
+
+    costs_lists = []
+    for i in versions:
+            gname = tuple_to_gname(geometry)
+            file_name = generate_csv_file_name(gname, exp, "", "", i, model, other="candidates{}".format(add_1))
+            # get cost for each version
+            cost = get_cost_of_added_edges(path, cost_by_length, nodes_allocations[geometry][i], file_name)
+
+            costs_lists.append(cost)
+    return costs_lists
+
+
 def get_all_data_for(path, geometry, exp, imax, attack, systems, strategies_paths={}, legacy=False, debug=False,
                      recv_file_name=None):
     version = "average"
