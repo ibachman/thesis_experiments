@@ -82,7 +82,12 @@ def km_to_coordinates_chile(kms):
 
 
 def soil_value(vs30):
-    return 0.322
+    use_03 = False
+    factor = 1
+    if use_03:
+        return -0.730
+    else:
+        return -0.322 * factor
 
 
 # create a network
@@ -114,6 +119,7 @@ for i in range(100):
     all_gl.append(result['GL'])
 
 print("Average GL: {} ({})".format(round(np.mean(all_gl), 4), round(np.std(all_gl), 4)))
+print("min GL: {}".format(round(min(all_gl), 4)))
 exit(43)
 max_radius = km_to_coordinates_chile(400)
 print("Max radius: {}, cap at {}".format(np.round(max_radius, 4), 400))
