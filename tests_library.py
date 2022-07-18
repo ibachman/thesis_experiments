@@ -78,15 +78,29 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
         print("Ended at {}".format(datetime.datetime.now()))
         print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
 
+        ### make iteration_results[i] as str
+        iteration_results_str = []
+        for i in range(iteration_range - 1):
+            iteration_i_str = ""
+            first = True
+            for GL in iteration_results[i]:
+                if first:
+                    iteration_i_str += "{}".format(GL)
+                    first = False
+                else:
+                    iteration_i_str += ";{}".format(GL)
+            iteration_results_str.append(iteration_i_str)
+
         with open(file_name, 'w') as csvfile:
             print(" -> {} -- Writing results on: {}".format(process_name, file_name))
-            fieldnames = ["1-p", "mean", "std"]
+            fieldnames = ["1-p", "mean", "std", "detailed_res"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for i in range(iteration_range - 1):
                 writer.writerow({'1-p': ((i + 1) * 1.0) / iteration_range,
                                  'mean': numpy.mean(iteration_results[i]),
-                                 'std': numpy.std(iteration_results[i])})
+                                 'std': numpy.std(iteration_results[i]),
+                                 'detailed_res': iteration_results_str[i]})
     else:
         logic_nodes_deleted = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
                                                 physical_network, phys_suppliers, inter_roseta_phys,

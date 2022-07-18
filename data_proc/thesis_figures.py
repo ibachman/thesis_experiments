@@ -5,11 +5,11 @@ import data_proc.common_plots as cp
 import data_proc.plotting as pt
 import data_proc.LA_vs_RA_plots as vs
 import data_proc.data_processing as dp
+import data_proc.logic_network_analysis as lna
 import numpy as np
 #import common_plots as cp
 #import plotting as pt
 #import LA_vs_RA_plots as vs
-
 
 
 ppv = 3
@@ -48,6 +48,10 @@ def get_boxplots_cap_3(save_figure=True, ndeps=list(range(1, 11))):
 def get_imax_lines_cap_4(save_figure=True, check_u_q=False):
     for lv in range(1, 11):
         cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=check_u_q)
+
+def get_bridge_node_analysis_cap_4(save_figure=True):
+    lna.plot_bridge_nodes_danziger_rev(mode="degree_damage", save_figure=save_figure)
+    lna.plot_bridge_nodes_danziger_rev(mode="delta", save_figure=save_figure)
 
 
 def get_boxplots_cap_5(save_figure=True):
@@ -634,5 +638,5 @@ def get_delta_gl_vs_cost_cap5(save_fig=True):
             cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["GPA", "YAO", "ER"], img_ver=2, save_figure=save_fig)
 
 
-#get_delta_gl_vs_cost_cap5(save_fig=True)
+#get_bridge_node_analysis_cap_4(save_figure=True)
 

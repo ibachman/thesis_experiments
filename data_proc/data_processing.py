@@ -1694,6 +1694,9 @@ def find_bridge_nodes(logic_file_path, supplier_path, debug=False, get_all_nodes
             logic_providers.append(row[0])
     # load logic network from file
     logic_network = set_graph_from_csv(logic_file_path)
+
+    #print("----->>>>>>",sorted(logic_network.degree(), reverse=True))
+
     logic_node_names = ['l{}'.format(i) for i in range(300)]
 
     for node in logic_node_names:
@@ -1742,6 +1745,9 @@ def find_bridge_nodes(logic_file_path, supplier_path, debug=False, get_all_nodes
                 print("There are {} clusters with providers".format(len(clusters_with_providers)))
             bridge_nodes_data[node]["functional_clusters"] = len(clusters_with_providers)
             bridge_nodes_data[node]["is_provider"] = node in logic_providers
+            bridge_nodes_data[node]['number_of_neighbors'] = len(logic_network.neighbors(node))
+            bridge_nodes_data[node]['degree'] = logic_network.degree(node)
+            bridge_nodes_data[node]['non_functional_clusters'] = clusters_without_providers
         elif len(clusters_with_providers) > 1 and debug:
             print("Removing {}".format(node))
             print(" - Is provider: {}".format(node in logic_providers))
@@ -1789,5 +1795,34 @@ def add_interlinks_to_bridge_nodes(ndep, logic_file_path, supplier_path, interli
     return extra_interlinks
 
 
+def get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations):
+    path_data = run_data()
+    path = path_data["results_paths"]["RA"]["simple graphs"]
+    name = "comp_it{}_result_ppv3_{}_exp_2.5_ndep_{}_att_physical_v{}_m_{}.csv".format(number_of_iterations, tuple_to_gname(space), ndep, version, physical_model)
 
+    detailed_results = {}
+    first_row = True
+
+    file_path_name = os.path.join(path, name)
+    with open(file_path_name) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+
+        for row in csv_reader:
+            if first_row:
+                first_row = False
+                continue
+            damage = float(row[0])
+            full_data = row[3]
+            full_data = full_data.split(";")
+            full_data = [float(x) for x in full_data]
+            detailed_results[damage] = full_data
+
+    return detailed_results
+
+
+def check_zeros(detailed_results_dict):
+    zeros_dict = {}
+    for key in detailed_results_dict.keys():
+        zeros_dict[key] = detailed_results_dict[key].count(0.0) / len(detailed_results_dict[key])
+    return zeros_dict
 
