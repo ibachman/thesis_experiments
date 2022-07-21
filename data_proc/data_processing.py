@@ -1826,3 +1826,11 @@ def check_zeros(detailed_results_dict):
         zeros_dict[key] = detailed_results_dict[key].count(0.0) / len(detailed_results_dict[key])
     return zeros_dict
 
+
+def check_close_to_expected_value(detailed_results_dict, wigle=0.0):
+    close_to_expected_value_dict = {}
+    for key in detailed_results_dict.keys():
+        values_close_to_expected = [x for x in detailed_results_dict[key] if x >= max(((1-key) - wigle),0.0) and x!= 0.0]
+        #print("values above {}: {}".format(max(((1-key) - wigle),0.0), values_close_to_expected))
+        close_to_expected_value_dict[key] = len(values_close_to_expected) / len(detailed_results_dict[key])
+    return close_to_expected_value_dict

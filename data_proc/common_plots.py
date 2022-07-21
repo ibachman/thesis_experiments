@@ -3,6 +3,7 @@ import data_proc.plotting as plot
 #import data_processing as dp
 #import plotting as plot
 import matplotlib.pyplot as plt
+import matplotlib.colors as cl
 from matplotlib.ticker import MultipleLocator
 import numpy as np
 import os
@@ -373,10 +374,24 @@ def show_each_physical_version(logic_net_version, interlink_type, interlink_vers
     colors = ['#7aa711', '#ec7014', '#ae017e', '#009179', '#f7c81e', '#8506b8','#000000', '#ff0000', '#0800ff',
               '#158280', '#5c6363', '#8506b8']
     line_width = []
+
+
+    line_avg = []
+
+    for i in range(len(data[strategy][4])):
+        line_list = []
+        for v in versions:
+            line_list.append(data[strategy][v][i])
+        line_avg.append(np.mean(line_list))
+
+    versions = [4]
     for v in versions:
         line_name = "{} {} {} v{}".format(physical_model, fig_space_name, strategy,v)
         lines[line_name] = data[strategy][v]
         line_width.append(0.5)
+
+    lines["avg"] = line_avg
+    line_width.append(1.5)
 
     plot.n_line_plot(lines, data["x_axis"], "ndep {}, lv {}".format(ndep, logic_net_version), c_list=colors, line_size=line_width)
 
@@ -1698,3 +1713,121 @@ def seaborn_test_boxplot():
     plt.show()
 
 
+def stacked_plot(x, y_list, labels=[], plot_line=[], autoclose=False, save_fig=False, save_name=""):
+    # user to specify
+    source = y_list # list of units to be stacked
+    pct_max = 100  # for example, max percentile of color ramp
+    pct_min = 50  # for example, min percentile of color ramp
+    ramp = plt.cm.viridis  # for example
+
+    # number of items in data source
+    n = len(source)
+
+    # list of values between 0.00 and 1.00; length equals length of data source
+    n_prop = list(i / 100.0 for i in (np.arange(pct_min, pct_max, (pct_max - pct_min) / n)))
+
+    # create list of colors
+    clr_lst = []
+    for i in n_prop:
+        clr = ramp(i)
+        clr_lst.append(clr)
+
+    for color in clr_lst+[(0.9553, 0.901065, 0.118128, 1.0)]:
+        print(color)
+        print(cl.rgb2hex(color))
+
+    cm = 1 / 2.54
+    fig, ax1 = plt.subplots(figsize=(20 * cm, 14 * cm))
+
+    color_map = ["#9b59b6", "#e74c3c", "#34495e"]#, "#2ecc71"]
+    # Basic stacked area chart.
+    lns_stack = ax1.stackplot(x, y_list, colors=clr_lst, labels=labels)
+
+    for x_placement in range(0, 105, 5):
+        color = "#60628a"
+        ax1.axvline(x_placement/100, color=color, linewidth=0.8)#, linestyle='dotted')
+        ax1.axhline(x_placement / 100, color=color, linewidth=0.8)#, linestyle='dotted')
+
+
+    plt.ylim(0, 1)
+    plt.xlim(0, 1)
+    plt.legend(loc='lower right')
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.xlabel('(1 - p)', fontsize=15)
+
+    ax1.set_xticks([0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.5, 0.7, 0.8, 0.9, 1], minor=False)
+    ax1.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.5, 0.7, 0.8, 0.9, 1], minor=False)
+    ax1.set_xticks([0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.5, 0.7, 0.8, 0.9, 1], minor=True)
+    ax1.set_ylabel('Fraction of iterations', fontsize=15)
+
+    if len(plot_line) > 0:
+        ax2 = ax1.twinx()
+        ax2.set_ylim(0, 1)
+        ax2.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.5, 0.7, 0.8, 0.9, 1], minor=False)
+        ax2.tick_params(labelsize=12)
+        ax2.set_ylabel(r'Average $G_{L}$',fontsize=15)
+
+        lns_plot = ax2.plot(x, plot_line, label=r'Average $G_{L}$', color='#584069', linewidth=0.5, marker='o', markeredgecolor='#440154',markerfacecolor='#90d743', markersize=2.5)
+        #ax2.legend(loc=0)
+        lns = lns_stack + lns_plot
+        labs = [l.get_label() for l in lns]
+        ax1.legend(lns, labs, loc='lower right')
+
+
+    if save_fig:
+        fig_name = save_name
+        fig_path = '../figures/cap3/{}'.format(fig_name)
+        print("saving figure in: {}".format(fig_path))
+        plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0.002)
+    if autoclose:
+        plt.clf()
+    else:
+        plt.show()
+
+
+def stacked_plot_and_avg_gl_line(physical_model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, autoclose=False, save_fig=False):
+
+    # <get all iterations data>
+    all_iteration_data_dict = dp.get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations)
+    count_zeros_dict = dp.check_zeros(all_iteration_data_dict)
+    close_v_dict = dp.check_close_to_expected_value(all_iteration_data_dict, wigle=wigle)
+
+    x = []
+    zeros = []
+    close_l = []
+    rest = []
+    for key in count_zeros_dict.keys():
+        x.append(key)
+        zeros.append(count_zeros_dict[key])
+        close_l.append(close_v_dict[key])
+        rest.append(max((1 - close_v_dict[key] - count_zeros_dict[key]), 0.0))
+
+    y_list = [zeros, rest, close_l]
+    # </get all iterations data>
+
+    # <get avg line data>
+    all_data = dp.run_data()
+    strategy = "simple graphs"
+    attack = all_data["attack"]
+    exp = all_data["exp"]
+    interlink_type = "provider_priority"
+    interlink_type_name = all_data["interlink_types"][interlink_type]
+    fig_space_name = all_data["figure_space_names"][space]
+    data_paths = {strategy: all_data["results_paths"]["RA"][strategy]}
+    space_name = all_data["file_space_names"][space]
+    interlink_version = 3
+    logic_net_version = 1
+    file_name_1 = "result_{}v{}_lv{}_{}_exp_{}_ndep_{}_att_physical_v".format(interlink_type_name, interlink_version, logic_net_version, space_name, exp, ndep)
+    file_name_2 = "_m_{}.csv".format(physical_model)
+    file_name = file_name_1 + "{}" + file_name_2
+    data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
+    # </get avg line data>
+
+    if save_fig:
+        # crear fig_name
+        fig_name = "{}_all_iterations_percentage_ndep{}_{}_v{}.png".format(physical_model, ndep, fig_space_name, version)
+    else:
+        fig_name = ""
+
+    stacked_plot(x, y_list, labels=["zeros", "rest", "close"], plot_line=data[strategy][version], autoclose=autoclose, save_fig=save_fig)
