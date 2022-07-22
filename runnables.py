@@ -281,8 +281,11 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             path = os.path.dirname(os.path.abspath(__file__))
             ##############################
             complete_results = True
+            seq_results = True
             if complete_results:
                 physical_attack_title = "comp_it{}_{}".format(iter_number, physical_attack_title)
+            if seq_results:
+                physical_attack_title = "seq_{}".format(physical_attack_title)
             ##############################
             if len(capped_random) > 0 and strategy == "random":
                 path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", capped_random, physical_attack_title)
