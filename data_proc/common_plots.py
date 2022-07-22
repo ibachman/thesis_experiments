@@ -384,7 +384,7 @@ def show_each_physical_version(logic_net_version, interlink_type, interlink_vers
             line_list.append(data[strategy][v][i])
         line_avg.append(np.mean(line_list))
 
-    versions = [4]
+    #versions = [4]
     for v in versions:
         line_name = "{} {} {} v{}".format(physical_model, fig_space_name, strategy,v)
         lines[line_name] = data[strategy][v]
@@ -490,7 +490,7 @@ def show_all_logic_versions_for_model_version(version, interlink_type, interlink
     plot.n_line_plot(lines, x_axis, title, c_list=colors, line_size=line_width)
 
 
-def show_average_for_logic_version(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, show=True, m_results=False):
+def show_average_for_logic_version(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, show=True, m_results=False, prefix=""):
     # get all data (10 lines)
     all_data = dp.run_data()
     attack = all_data["attack"]
@@ -509,6 +509,8 @@ def show_average_for_logic_version(logic_net_version, interlink_type, interlink_
     file_name = file_name_1 + "{}" + file_name_2
     if m_results:
         file_name = "m_{}".format(file_name)
+
+    file_name = "{}_{}".format(prefix, file_name)
 
     data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
     lines = {}
@@ -534,7 +536,8 @@ def show_average_for_logic_version(logic_net_version, interlink_type, interlink_
     return data["x_axis"], lines
 
 
-def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None):
+def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_version, physical_model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None,
+                               prefix=""):
     all_data = dp.run_data()
     space_name = all_data["file_space_names"][space]
     space_tag = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
@@ -549,7 +552,7 @@ def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_vers
     for ndep in all_imax:
         for space in spaces:
             space_name = all_data["file_space_names"][space]
-            x_axis, lines = show_average_for_logic_version(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, show=False, m_results=m_results)
+            x_axis, lines = show_average_for_logic_version(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, show=False, m_results=m_results, prefix=prefix)
             for line_name in lines.keys():
                 all_lines["{} {} {}".format(physical_model, r'$I_{max}$', ndep)] = lines[line_name]
     fig_name = "lines_{}_lv{}_{}_{}.png".format(physical_model, logic_net_version, strategy.replace(" ", "_"), space_dir_name[space])
@@ -1732,9 +1735,9 @@ def stacked_plot(x, y_list, labels=[], plot_line=[], autoclose=False, save_fig=F
         clr = ramp(i)
         clr_lst.append(clr)
 
-    for color in clr_lst+[(0.9553, 0.901065, 0.118128, 1.0)]:
-        print(color)
-        print(cl.rgb2hex(color))
+    #for color in clr_lst+[(0.9553, 0.901065, 0.118128, 1.0)]:
+    #    print(color)
+    #    print(cl.rgb2hex(color))
 
     cm = 1 / 2.54
     fig, ax1 = plt.subplots(figsize=(20 * cm, 14 * cm))
@@ -1751,7 +1754,7 @@ def stacked_plot(x, y_list, labels=[], plot_line=[], autoclose=False, save_fig=F
 
     plt.ylim(0, 1)
     plt.xlim(0, 1)
-    plt.legend(loc='lower right')
+    #plt.legend(loc='lower right')
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.xlabel('(1 - p)', fontsize=15)
@@ -1766,14 +1769,13 @@ def stacked_plot(x, y_list, labels=[], plot_line=[], autoclose=False, save_fig=F
         ax2.set_ylim(0, 1)
         ax2.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.5, 0.7, 0.8, 0.9, 1], minor=False)
         ax2.tick_params(labelsize=12)
-        ax2.set_ylabel(r'Average $G_{L}$',fontsize=15)
+        ax2.set_ylabel(r'$\langle G_{L}\rangle$',fontsize=15)
 
-        lns_plot = ax2.plot(x, plot_line, label=r'Average $G_{L}$', color='#584069', linewidth=0.5, marker='o', markeredgecolor='#440154',markerfacecolor='#90d743', markersize=2.5)
+        lns_plot = ax2.plot(x, plot_line, label=r'$\langle G_{L}\rangle$', color='#584069', linewidth=0.5, marker='o', markeredgecolor='#440154',markerfacecolor='#90d743', markersize=2.5)
         #ax2.legend(loc=0)
         lns = lns_stack + lns_plot
         labs = [l.get_label() for l in lns]
-        ax1.legend(lns, labs, loc='lower right')
-
+        ax2.legend(lns, labs)#, loc='lower right')
 
     if save_fig:
         fig_name = save_name
@@ -1786,48 +1788,89 @@ def stacked_plot(x, y_list, labels=[], plot_line=[], autoclose=False, save_fig=F
         plt.show()
 
 
-def stacked_plot_and_avg_gl_line(physical_model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, autoclose=False, save_fig=False):
+def stacked_plot_and_avg_gl_line(physical_model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, strategy="simple graphs", autoclose=False, save_fig=False, lv=1):
 
     # <get all iterations data>
-    all_iteration_data_dict = dp.get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations)
+    all_iteration_data_dict = dp.get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
     count_zeros_dict = dp.check_zeros(all_iteration_data_dict)
-    close_v_dict = dp.check_close_to_expected_value(all_iteration_data_dict, wigle=wigle)
+    close_v_dict, upper_v_dict = dp.check_close_to_expected_value(all_iteration_data_dict, wigle=wigle, get_upper=True)
 
     x = []
     zeros = []
     close_l = []
+    upper_l = []
     rest = []
     for key in count_zeros_dict.keys():
         x.append(key)
         zeros.append(count_zeros_dict[key])
         close_l.append(close_v_dict[key])
-        rest.append(max((1 - close_v_dict[key] - count_zeros_dict[key]), 0.0))
+        upper_l.append(upper_v_dict[key])
+        rest.append(max((1 - close_v_dict[key] - upper_v_dict[key] - count_zeros_dict[key]), 0.0))
 
-    y_list = [zeros, rest, close_l]
+    y_list = [zeros, rest, close_l, upper_l]
     # </get all iterations data>
 
     # <get avg line data>
     all_data = dp.run_data()
-    strategy = "simple graphs"
+
     attack = all_data["attack"]
-    exp = all_data["exp"]
-    interlink_type = "provider_priority"
-    interlink_type_name = all_data["interlink_types"][interlink_type]
     fig_space_name = all_data["figure_space_names"][space]
     data_paths = {strategy: all_data["results_paths"]["RA"][strategy]}
     space_name = all_data["file_space_names"][space]
-    interlink_version = 3
-    logic_net_version = 1
-    file_name_1 = "result_{}v{}_lv{}_{}_exp_{}_ndep_{}_att_physical_v".format(interlink_type_name, interlink_version, logic_net_version, space_name, exp, ndep)
-    file_name_2 = "_m_{}.csv".format(physical_model)
-    file_name = file_name_1 + "{}" + file_name_2
+
+    file_name = "seq_comp_it{}_result_ppv3_lv{}_{}_exp_2.5_ndep_{}_att_physical_v{}_m_{}.csv".format(number_of_iterations, lv, space_name, ndep, version, physical_model)
+
     data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
     # </get avg line data>
 
-    if save_fig:
-        # crear fig_name
-        fig_name = "{}_all_iterations_percentage_ndep{}_{}_v{}.png".format(physical_model, ndep, fig_space_name, version)
-    else:
-        fig_name = ""
+    strategyname = strategy.replace(" ", "_")
+    fig_name = "{}_{}_all_iterations_it{}_percentage_ndep{}_{}_v{}.png".format(strategyname, physical_model, number_of_iterations, ndep, space_name, version)
+    print(fig_name, "saved?:", save_fig)
 
-    stacked_plot(x, y_list, labels=["zeros", "rest", "close"], plot_line=data[strategy][version], autoclose=autoclose, save_fig=save_fig)
+    str_wigle = str(wigle)
+    stacked_plot(x, y_list, labels=[r'$G_{L} = 0$',  r'$(p - '+str_wigle+') \geq G_{L} > 0$', r'$(p + '+str_wigle+')\geq G_{L} > (p - '+str_wigle+')$', r'$G_{L} > (p + '+str_wigle+')$'],
+                 plot_line=data[strategy][version],
+                 autoclose=autoclose,
+                 save_fig=save_fig, save_name=fig_name)
+
+
+def plot_all_iterations(physical_model, space, ndep, version=4, number_of_iterations=100, strategy="simple graphs",lv=1, autoclose=False, save_fig=False):
+    line_dict = dp.get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+
+    # <get all iterations data>
+    all_iteration_data_dict = dp.get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations, strategy=strategy,lv=lv)
+
+    x = []
+    for key in all_iteration_data_dict.keys():
+        x.append(key)
+
+    cm = 1 / 2.54
+    fig, ax = plt.subplots(figsize=(20 * cm, 14 * cm))
+    for line_name in line_dict.keys():
+        ax.plot(x, line_dict[line_name])
+    plt.show()
+
+
+def plot_gl_at_pc_for_imax(physical_model, space, number_of_iterations=100, strategy="simple graphs", lv=1):
+    x = []
+    y = []
+    line_y = []
+    line_x = []
+    for ndep in range(1, 11):
+        line_x.append(ndep)
+        current_ndep = []
+        for version in range(1, 11):
+            line_dict = dp.get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+            gl_at_pc = dp.get_gl_at_pc(line_dict)
+
+            x += [ndep for i in range(len(gl_at_pc))]
+            y += gl_at_pc
+            current_ndep += gl_at_pc
+        line_y.append(np.mean(current_ndep))
+
+    fig, ax = plt.subplots()
+    size = 10
+    ax.scatter(x, y, s=[x * size for x in np.ones(len(x))], alpha=1, edgecolor='black', linewidth=0.2)
+    ax.plot(line_x, line_y)
+    plt.show()
+

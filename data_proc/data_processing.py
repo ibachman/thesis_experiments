@@ -185,7 +185,7 @@ def get_costs_list(geometry, addition_strategy, model, add_to_title=""):
 
 
 def get_all_data_for(path, geometry, exp, imax, attack, systems, strategies_paths={}, legacy=False, debug=False,
-                     recv_file_name=None):
+                     recv_file_name=None, get_complete_data_for=-1):
     version = "average"
     lines = {}
     aux_line = []
@@ -216,9 +216,10 @@ def get_all_data_for(path, geometry, exp, imax, attack, systems, strategies_path
     elif strategies_paths:
         system_name = systems
         for strategy in strategies_paths.keys():
+            file_name = generate_csv_file_name(geometry, exp, imax, attack, version, system_name)
 
             path = strategies_paths[strategy]
-            file_name = generate_csv_file_name(geometry, exp, imax, attack, version, system_name)
+
             if legacy:
                 file_name = "legacy_{}".format(file_name)
             if debug:
@@ -1795,10 +1796,33 @@ def add_interlinks_to_bridge_nodes(ndep, logic_file_path, supplier_path, interli
     return extra_interlinks
 
 
-def get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations):
+def get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1):
+    detailed_results = get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+    lines_dict = {}
+    for i in range(number_of_iterations):
+        lines_dict["line {}".format(i)] = []
+        for key in detailed_results.keys():
+            lines_dict["line {}".format(i)].append(detailed_results[key][i])
+    return lines_dict
+
+
+def get_gl_at_pc(line_dict):
+    values_at_pc = []
+    for key in line_dict.keys():
+        if 0.0 in line_dict[key]:
+            index_plus_one = line_dict[key].index(0.0)
+            index = index_plus_one - 1
+            should_be_zero = line_dict[key][index_plus_one]
+            value_at_pc = line_dict[key][index]
+            if should_be_zero == 0.0 and value_at_pc != 0.0:
+                values_at_pc.append(value_at_pc)
+    return values_at_pc
+
+
+def get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1):
     path_data = run_data()
-    path = path_data["results_paths"]["RA"]["simple graphs"]
-    name = "comp_it{}_result_ppv3_{}_exp_2.5_ndep_{}_att_physical_v{}_m_{}.csv".format(number_of_iterations, tuple_to_gname(space), ndep, version, physical_model)
+    path = path_data["results_paths"]["RA"][strategy]
+    name = "seq_comp_it{}_result_ppv3_lv{}_{}_exp_2.5_ndep_{}_att_physical_v{}_m_{}.csv".format(number_of_iterations, lv, tuple_to_gname(space), ndep, version, physical_model)
 
     detailed_results = {}
     first_row = True
@@ -1827,10 +1851,19 @@ def check_zeros(detailed_results_dict):
     return zeros_dict
 
 
-def check_close_to_expected_value(detailed_results_dict, wigle=0.0):
+def check_close_to_expected_value(detailed_results_dict, wigle=0.0, get_upper=False):
     close_to_expected_value_dict = {}
+    upper_values_dict = {}
     for key in detailed_results_dict.keys():
-        values_close_to_expected = [x for x in detailed_results_dict[key] if x >= max(((1-key) - wigle),0.0) and x!= 0.0]
+        if get_upper:
+            values_close_to_expected = [x for x in detailed_results_dict[key] if ((1 - key) + wigle) >= x > max(((1 - key) - wigle), 0.0)]
+            upper_values = [x for x in detailed_results_dict[key] if x > ((1 - key) + wigle)]
+
+            close_to_expected_value_dict[key] = len(values_close_to_expected) / len(detailed_results_dict[key])
+            upper_values_dict[key] = len(upper_values) / len(detailed_results_dict[key])
+        else:
+            values_close_to_expected = [x for x in detailed_results_dict[key] if x > max(((1-key) - wigle), 0.0)]
+            close_to_expected_value_dict[key] = len(values_close_to_expected) / len(detailed_results_dict[key])
         #print("values above {}: {}".format(max(((1-key) - wigle),0.0), values_close_to_expected))
-        close_to_expected_value_dict[key] = len(values_close_to_expected) / len(detailed_results_dict[key])
-    return close_to_expected_value_dict
+
+    return close_to_expected_value_dict, upper_values_dict

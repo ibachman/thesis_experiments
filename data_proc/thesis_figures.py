@@ -29,6 +29,16 @@ def pre_process_seismic_scatter_data(model, ndep=3, strategy=["distance_aux", "l
             pt.write_stuff(g, st, use_model=[model], ndep=ndep, is_seismic=True)
 
 
+def get_lines_cap3(save_figure=True):
+    strategy = "simple graphs"
+    interlink_type = "provider_priority"
+
+    for logic_net_version in range(1, 11):
+        for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
+            for space in [(20, 500), (100, 100)]:
+                cp.show_averages_for_all_imax(logic_net_version, interlink_type, ppv, model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None)
+
+
 def get_bars_cap_3(save_figure=True):
     for imax in range(1, 11):
         cp.show_curves_as_bar_and_error_by_model_double_plot("provider_priority", ppv, imax, "simple graphs", m_results=False, save_fig=save_figure)
@@ -45,9 +55,17 @@ def get_boxplots_cap_3(save_figure=True, ndeps=list(range(1, 11))):
             cp.show_curves_as_points_by_space("provider_priority", ppv, model, "simple graphs", ndep, m_results=False, save_fig=save_figure)
 
 
+def get_detailed_iteration_analisys_cap_3(save_figure=True, ndeps=list(range(1, 11))):
+    for space in [(20, 500), (100, 100)]:
+        for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
+            for ndep in ndeps:
+                cp.stacked_plot_and_avg_gl_line(model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, autoclose=False, save_fig=False)
+
+
 def get_imax_lines_cap_4(save_figure=True, check_u_q=False):
     for lv in range(1, 11):
         cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=check_u_q)
+
 
 def get_bridge_node_analysis_cap_4(save_figure=True):
     lna.plot_bridge_nodes_danziger_rev(mode="degree_damage", save_figure=save_figure)
@@ -638,5 +656,5 @@ def get_delta_gl_vs_cost_cap5(save_fig=True):
             cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["GPA", "YAO", "ER"], img_ver=2, save_figure=save_fig)
 
 
-#get_bridge_node_analysis_cap_4(save_figure=True)
+#get_detailed_iteration_analisys_cap_3()
 
