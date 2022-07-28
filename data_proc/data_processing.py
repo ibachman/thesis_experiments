@@ -1808,15 +1808,168 @@ def get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of
 
 def get_gl_at_pc(line_dict):
     values_at_pc = []
-    for key in line_dict.keys():
-        if 0.0 in line_dict[key]:
-            index_plus_one = line_dict[key].index(0.0)
-            index = index_plus_one - 1
-            should_be_zero = line_dict[key][index_plus_one]
-            value_at_pc = line_dict[key][index]
-            if should_be_zero == 0.0 and value_at_pc != 0.0:
-                values_at_pc.append(value_at_pc)
+
+    for i in range(len(line_dict.keys())):
+        line_name = "line {}".format(i)
+        line = line_dict[line_name]
+        index_list = compress_line(line)
+        compressed_line = []
+        for k in index_list:
+            compressed_line.append(line[k])
+
+        index_plus_one = compressed_line.index(0.0)
+        if compressed_line[index_plus_one - 1] > 0.05:
+            values_at_pc.append(compressed_line[index_plus_one - 1])
+        else:
+            values_at_pc.append(compressed_line[index_plus_one - 2])
+
     return values_at_pc
+
+
+def get_gl_at_pc_using_NOI(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1, close_to_max_noi=0.0):
+    damage, NOI_lines, GL_per_iteration_lines = get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
+    line_dict = get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+
+    do_print = False
+    values_at_pc = []
+
+    for i in range(number_of_iterations):
+        #if do_print:
+        #    print("-------- {} --------".format(i))
+        current_NOI = NOI_lines[i]
+        copy_of_current_NOI = current_NOI.copy()
+        copy_of_current_NOI.sort(reverse=True)
+        line_name = "line {}".format(i)
+        line = line_dict[line_name]
+
+        index_list = compress_line(line)
+        compressed_x = []
+        compressed_NOI_line = []
+        compressed_line = []
+
+        for k in index_list:
+            compressed_x.append(damage[k])
+            compressed_NOI_line.append(NOI_lines[i][k])
+            compressed_line.append(line[k])
+
+        current_NOI = compressed_NOI_line
+        copy_of_current_NOI = current_NOI.copy()
+        copy_of_current_NOI.sort(reverse=True)
+        line = compressed_line
+        max_j = len(line)
+
+        max_delta = 0
+        add_index = -1
+        add_damage = -1
+
+        max_m = 0
+        index_at_max_m = 0
+        damage_at_max_m = 0
+        delta_at_max_m = 0
+
+        last_index = -1
+        last_noi_value = -1
+
+        damage_at_max_noi = 0
+        index_at_max_noi = 0
+        delta_at_max_noi = 0
+
+        for j in range(max_j):
+
+            search_noi_value = copy_of_current_NOI[j]
+            if search_noi_value != last_noi_value:
+                last_index = -1
+            index = current_NOI.index(search_noi_value, last_index + 1)
+
+            if j == 0:
+
+                index_at_max_noi = index
+                value_at_pc = line[index_at_max_noi - 1]
+                delta_1_at_max_noi = (line[index_at_max_noi - 2] - value_at_pc)
+                delta_2_at_max_noi = (value_at_pc - line[index_at_max_noi])
+
+
+                if delta_1_at_max_noi < delta_2_at_max_noi:
+                    max_noi_m = numpy.abs(delta_2_at_max_noi/ (compressed_x[index - 1] - compressed_x[index]))
+                    index_at_max_noi = index_at_max_noi - 1
+
+                else:
+                    max_noi_m = numpy.abs(delta_1_at_max_noi / (compressed_x[index - 2] - compressed_x[index - 1]))
+                    index_at_max_noi = index_at_max_noi - 2
+                delta_at_max_noi = max(delta_1_at_max_noi, delta_2_at_max_noi)
+                damage_at_max_noi = compressed_x[index_at_max_noi]
+
+            last_index = index
+            last_noi_value = search_noi_value
+
+            value_at_pc = line[index-1]
+            delta_1 = (line[index-2] - value_at_pc)
+            delta_2 = (value_at_pc - line[index])
+
+            if delta_1 < delta_2:
+                big_delta_m = numpy.abs(delta_2 / (compressed_x[index - 1] - compressed_x[index]))
+                big_delta = delta_2
+                big_delta_index = index - 1
+                big_delta_damage = compressed_x[big_delta_index]
+            else:
+                big_delta_m = numpy.abs(delta_1 / (compressed_x[index - 2] - compressed_x[index - 1]))
+                big_delta = delta_1
+                big_delta_index = index - 2
+                big_delta_damage = compressed_x[big_delta_index]
+
+            # check max_delta
+            if big_delta > max_delta:
+                max_delta = big_delta
+                add_index = big_delta_index
+                add_damage = big_delta_damage
+                add_m = big_delta_m
+                #print("+++++++ {}".format(i))
+                #print([line[add_index], add_damage, add_m])
+                #print("+++++++")
+
+            # check max_m
+            if big_delta_m > max_m:
+                max_m = big_delta_m
+                index_at_max_m = big_delta_index
+                damage_at_max_m = big_delta_damage
+                delta_at_max_m = big_delta
+
+        #print("max_noi_m",max_noi_m, "add_m",add_m)
+        #print("damage_at_max_noi", damage_at_max_noi, "add_damage", add_damage, "damage_at_max_m", damage_at_max_m)
+        #print("max_m", max_m, "add_m", add_m)
+        #print("delta_at_max_noi", delta_at_max_noi, "max_delta * 0.4", max_delta * 0.4)
+        if numpy.abs(damage_at_max_noi - add_damage) < close_to_max_noi and (max_noi_m >= add_m or damage_at_max_noi < add_damage):
+            #print("using max noi instead of", line[add_index])
+            values_at_pc.append(line[index_at_max_noi])
+        elif damage_at_max_noi < damage_at_max_m and (delta_at_max_noi >= max_delta * 0.7):
+            #print("using max noi instead of", line[add_index])
+            values_at_pc.append(line[index_at_max_noi])
+
+        elif max_m > add_m and (delta_at_max_m >= max_delta * 0.7 or damage_at_max_m < add_damage):
+            #print("using max m instead of", line[add_index])
+            values_at_pc.append(line[index_at_max_m])
+        else:
+            values_at_pc.append(line[add_index])
+
+    return values_at_pc
+
+
+def compress_line(line):
+    i_list = []
+    last_value_line = line[0]
+    i_list.append(0)
+    count = 0
+    for i in range(len(line)):
+        if line[i] == last_value_line and last_value_line != 0.0:
+            continue
+        else:
+            if last_value_line == 0.0:
+                count += 1
+            if count > 10:
+                break
+            last_value_line = line[i]
+            i_list.append(i)
+    return i_list
 
 
 def get_complete_decay_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1):
@@ -1842,6 +1995,54 @@ def get_complete_decay_data(physical_model, space, ndep, version, number_of_iter
             detailed_results[damage] = full_data
 
     return detailed_results
+
+
+def get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1):
+    path_data = run_data()
+    path = path_data["results_paths"]["RA"][strategy]
+    name = "seq_comp_it{}_result_ppv3_lv{}_{}_exp_2.5_ndep_{}_att_physical_v{}_m_{}.csv".format(number_of_iterations, lv, tuple_to_gname(space), ndep, version, physical_model)
+
+    NOI_lines = {}
+    GL_per_iteration_lines = {}
+    first_row = True
+    damage_list = []
+
+    file_path_name = os.path.join(path, name)
+    with open(file_path_name) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+
+        for row in csv_reader:
+            if first_row:
+                for line in range(number_of_iterations):
+                    NOI_lines[line] = []
+                    GL_per_iteration_lines[line] = []
+                first_row = False
+                continue
+            damage = float(row[0])
+            damage_list.append(damage)
+
+            full_data = row[4]
+            full_data = full_data.split(";")
+            full_data = [float(x) for x in full_data]
+            for line in range(number_of_iterations):
+                NOI_lines[line].append(full_data[line])
+
+            full_data = row[5]
+            full_data = full_data.split("];")
+
+            for line in range(number_of_iterations):
+                current_full_data = full_data[line]
+
+                current_full_data = current_full_data.replace("[", "")
+                current_full_data = current_full_data.replace("]", "")
+
+                data_list = current_full_data.split(";")
+
+                current_full_data = [float(x) for x in data_list]
+
+                GL_per_iteration_lines[line] += current_full_data
+
+    return damage_list, NOI_lines, GL_per_iteration_lines
 
 
 def check_zeros(detailed_results_dict):

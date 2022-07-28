@@ -6,6 +6,8 @@ import data_proc.plotting as pt
 import data_proc.LA_vs_RA_plots as vs
 import data_proc.data_processing as dp
 import data_proc.logic_network_analysis as lna
+import data_proc.bridgenode_correlations as bnc
+import data_proc.generate_tgl_table as gtglt
 import numpy as np
 #import common_plots as cp
 #import plotting as pt
@@ -60,6 +62,24 @@ def get_detailed_iteration_analisys_cap_3(save_figure=True, ndeps=list(range(1, 
         for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
             for ndep in ndeps:
                 cp.stacked_plot_and_avg_gl_line(model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, autoclose=False, save_fig=False)
+
+
+def generate_tgl_table_cap3(imax, prefix=""):
+    gtglt.tgl_table_for_imax(imax, prefix=prefix)
+
+
+def get_tgl_table_after_adding_interlinks_cap4(save_figure=False, prefix=""):
+    for lv in range(1, 11):
+        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=True, write_table=True,
+                                               prefix=prefix, show=False)
+
+
+def get_correlations_table_cap4(prefix=""):
+    bnc.make_correlation_table(bnc.get_data_for_correlation_table(prefix=prefix))
+
+
+def get_table_4p4_cap4():
+    bnc.table_imax_apparition(bnc.list_dict)
 
 
 def get_imax_lines_cap_4(save_figure=True, check_u_q=False):
@@ -655,6 +675,6 @@ def get_delta_gl_vs_cost_cap5(save_fig=True):
             cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["RNG", "GG", "5NN"], img_ver=1, save_figure=save_fig)
             cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["GPA", "YAO", "ER"], img_ver=2, save_figure=save_fig)
 
-
-#get_detailed_iteration_analisys_cap_3()
+# con esto puedo armar tablas de U_q
+# cp.show_imaxes_as_lines_with_error_tgl(1, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=False, check_u_q=True, write_table=False, prefix="", show=False)
 

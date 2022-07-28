@@ -666,7 +666,11 @@ def show_curves_as_bar_and_error_by_model(interlink_type, interlink_version, spa
     plot.plot_bar(x_axis, bars_shown, values, legend, "TG_L", "lv", title, yerr_list=yerr_list)
 
 
-def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, space, strategy, m_results=False, check_u_q=False, save_fig=True, strategies_comp=None, name_mod=""):
+def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, space, strategy, m_results=False, check_u_q=False, save_fig=True, strategies_comp=None, name_mod="",
+                                        write_table=False, prefix="", show=True):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
     models = ['RNG', 'GPA', 'GG', '5NN', 'YAO', 'ER']
 
     x_axis = list(range(1, 11))
@@ -678,7 +682,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
     values_per_imax_with_extra = {}
     values_per_imax_original = {}
     error_colors = None
-    if check_u_q:
+    if check_u_q and not write_table:
         print("--------- q = {} --- Contents\n [".format(lv))
     if type(m_results) == list:
         for model in models:
@@ -688,7 +692,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=res_type)
+                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=res_type, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -729,9 +733,9 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                     round_line = []
                     for e in miaux:
                         round_line.append(np.round(e,3))
-                    if res_type:
+                    if res_type and not write_table:
                         print("{},".format(round_line))
-        write_table = False
+
         if check_u_q and write_table:
             print("\\begin{table}[]")
             print("\\makebox[1 \\textwidth][c]{")
@@ -740,7 +744,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
             print("\\begin{tabular}{|c|l|l|l|l|l|l|l|}")
             print("\\hline")
             print("\\multicolumn{8}{|c|}{$q = " + str(lv) + "$}                            \\\\ \\hline")
-            print("$I_{max}$ & $+I$ & RNG & GG & GPA & 5-NNG & Yao & ER \\\\ \\hline")
+            print("$I_{max}$ & $+I$ & RNG & GG & GPA & 5NN & Yao & ER \\\\ \\hline")
             for imax in range(0, 10):
                 line_2 = "\\multirow{2}{*}{" + str(imax+1) + "}  & $\\times$ "
                 line_1 = "                    & $\\checkmark$ "
@@ -779,7 +783,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results)
+                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -799,6 +803,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
                     mod_title = "d{}_".format(name_mod)
+                    mod_title += prefix
                     lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=mod_title)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
@@ -815,12 +820,12 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
         use_title = False
     else:
         for model in models:
-            for space in [(100, 100), (20, 500)]:
+            for space in [(20, 500), (100, 100)]:
                 current_line = []
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results)
+                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -829,7 +834,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                     current_error.append(p_std)
                 lines["{} {}".format(model, space)] = current_line
                 errors["{} {}".format(model, space)] = current_error
-                if check_u_q:
+                if check_u_q and not write_table:
                     u_q = set()
                     for i in range(len(current_line)):
                         if i > 0:
@@ -845,9 +850,9 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
     print(fig_path)
     if not save_fig:
         fig_path = None
-
-    plot.n_line_plot(lines, x_axis, "lv {} {}".format(lv, space), ylim=y_lim, xlim=x_lim, errors=errors, color_pairs=True, savefig_to=fig_path, xlabel=r'$I_{max}$', ylabel=r'$\overline{TG}_L$',
-                     use_titles=use_title, err_c=error_colors)
+    if show:
+        plot.n_line_plot(lines, x_axis, "lv {} {}".format(lv, space), ylim=y_lim, xlim=x_lim, errors=errors, color_pairs=True, savefig_to=fig_path, xlabel=r'$I_{max}$', ylabel=r'$\overline{TG}_L$',
+                         use_titles=use_title, err_c=error_colors)
 
 
 def show_curves_as_points_by_space(interlink_type, interlink_version, physical_model, strategy, ndep, m_results=False, strategy_2=None, space=None, save_fig=True):
@@ -1852,25 +1857,171 @@ def plot_all_iterations(physical_model, space, ndep, version=4, number_of_iterat
 
 
 def plot_gl_at_pc_for_imax(physical_model, space, number_of_iterations=100, strategy="simple graphs", lv=1):
+    min_d_list = [[0, 0, 0, 0, 0, 0, 0.05, 0, 0, 0],
+                  [0.1, 0.0, 0.1, 0.1, 0.1, 0, 0, 0.05, 0.1, 0.05],
+                  [0.1, 0.1, 0, 0.1, 0, 0.1, 0, 0, 0, 0],
+                  [0.2, 0.15, 0, 0.25, 0.15, 0.15, 0.1, 0, 0, 0],
+                  [0.4, 0.1, 0.2, 0.15, 0.2, 0.2, 0.15, 0.3, 0.2, 0.15],
+                  [0.15, 0.15, 0.25, 0, 0, 0.35, 0.15, 0.15, 0.15, 0],
+                  [0.2, 0.25, 0.25, 0, 0, 0.25, 0.1, 0.2, 0, 0],
+                  [0, 0, 0, 0.15, 0, 0, 0, 0.25, 0, 0.25],
+                  [0.5, 0.1, 0.2, 0.15, 0.25, 0, 0.2, 0, 0.2, 0],
+                  [0.25, 0.25, 0, 0.3, 0, 0.15, 0.2, 0.15, 0.25, 0.2]]
+
     x = []
     y = []
     line_y = []
     line_x = []
+    errors = []
     for ndep in range(1, 11):
         line_x.append(ndep)
         current_ndep = []
         for version in range(1, 11):
-            line_dict = dp.get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
-            gl_at_pc = dp.get_gl_at_pc(line_dict)
+            #line_dict = dp.get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+            #gl_at_pc = dp.get_gl_at_pc(line_dict)
+
+            d = min_d_list[ndep - 1][version - 1]
+            gl_at_pc = dp.get_gl_at_pc_using_NOI(physical_model, space, ndep, version, number_of_iterations=number_of_iterations, strategy=strategy, lv=lv, close_to_max_noi=d)
 
             x += [ndep for i in range(len(gl_at_pc))]
             y += gl_at_pc
             current_ndep += gl_at_pc
         line_y.append(np.mean(current_ndep))
+        c_mean = np.mean(current_ndep)
+        c_std = np.std(current_ndep)
+        errors.append(c_std)
+        count_list = [x for x in current_ndep if (c_mean - c_std) <= x <= (c_mean + c_std)]
+        print(len(count_list)/len(current_ndep))
 
     fig, ax = plt.subplots()
     size = 10
-    ax.scatter(x, y, s=[x * size for x in np.ones(len(x))], alpha=1, edgecolor='black', linewidth=0.2)
+    ax.scatter(x, y, s=[x * size for x in np.ones(len(x))], alpha=0.2, color='yellow', edgecolor='black', linewidth=0.2)
+
+    ax.errorbar(line_x, line_y, yerr=errors, linewidth=2, capsize=3)
     ax.plot(line_x, line_y)
     plt.show()
+
+
+def plot_noi(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1, show=[]):
+    damage, lines, GL_per_iteration_lines = dp.get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
+    fig, ax = plt.subplots()
+    if len(show) == 0:
+        show = [i for i in range(number_of_iterations)]
+
+    for i in show:
+        ax.plot(damage, lines[i])
+
+    plt.show()
+
+
+def plot_average_noi(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1):
+    damage, NOI_lines, GL_per_iteration_lines = dp.get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
+    fig, ax = plt.subplots()
+
+    average_noi = []
+    for d in range(len(damage)):
+        av_noi = []
+        for i in range(number_of_iterations):
+            av_noi.append(NOI_lines[i][d])
+        average_noi.append(np.mean(av_noi))
+    ax.plot(damage, average_noi)
+
+    plt.show()
+
+
+def plot_GL_per_iteration(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1, show=[]):
+    damage, lines, GL_per_iteration_lines = dp.get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
+    fig, ax = plt.subplots()
+
+    if len(show) == 0:
+        show = [i for i in range(number_of_iterations)]
+
+    for i in show:
+        x = [k for k in range(len(GL_per_iteration_lines[i]))]
+        ax.plot(x, GL_per_iteration_lines[i])
+
+    plt.show()
+
+
+def plot_GL_and_NOI(physical_model, space, ndep, version=4, number_of_iterations=100, strategy="simple graphs",lv=1, autoclose=False, save_fig=False, show=[], use_compressed=True, test_p=False):
+    damage, NOI_lines, GL_per_iteration_lines = dp.get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
+    line_dict = dp.get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)
+
+    # <get all iterations data>
+
+    x = damage
+
+    cm = 1 / 2.54
+    fig, ax = plt.subplots(figsize=(20 * cm, 14 * cm))
+
+    ax2 = ax.twinx()
+    ax2.set_ylim(0, 1.05)
+    ax2.axhline(0.3, color='gray', linewidth=0.8)  # , linestyle='dotted')
+    ax.axhline(3, color='black', linewidth=0.8)  # , linestyle='dotted')
+    #ax2.axvline(0.16, color='black', linewidth=0.8)  # , linestyle='dotted')
+
+    if len(show) == 0:
+        show = [i for i in range(number_of_iterations)]
+
+    for i in show:
+        ln_N_paper_thing_1 = []
+        line_name = "line {}".format(i)
+        line = line_dict[line_name]
+        if use_compressed:
+            index_list = dp.compress_line(line)
+            compressed_x = []
+            compressed_NOI_line = []
+            compressed_line = []
+            last_k = 0
+            j = 0
+
+            max_noi = 0
+            max_noi_damage = 0
+            for k in index_list:
+
+                if test_p:
+                    compressed_x.append(x[j])
+                else:
+                    compressed_x.append(x[k])
+                j+=1
+                if last_k != 0:
+                    compressed_NOI_line.append(NOI_lines[i][last_k])
+                compressed_line.append(line[k])
+                last_k = k
+
+                if max_noi <= NOI_lines[i][k]:
+                    max_noi = NOI_lines[i][k]
+                    max_noi_damage = x[k]
+
+            compressed_NOI_line.append(NOI_lines[i][k])
+            compressed_NOI_line.append(NOI_lines[i][k])
+
+            for k in index_list:
+                if x[k] < max_noi_damage:
+                    ln_N_paper_thing_1.append(1 / np.sqrt(max_noi_damage-x[k]))
+                else:
+                    if max_noi_damage == x[k]:
+                        ln_N_paper_thing_1.append(7)
+                    else:
+                        ln_N_paper_thing_1.append(np.log(2000) / (np.sqrt(x[k] - max_noi_damage) * 10))
+            if test_p:
+                c = 'green'
+            else:
+                c = 'red'
+            ax2.plot(compressed_x, compressed_line, color=c)
+            ax.plot(compressed_x, compressed_NOI_line)
+            ax.plot(compressed_x, ln_N_paper_thing_1, color='yellow')
+        else:
+            if test_p:
+                c = 'green'
+            else:
+                c = 'red'
+            ax2.plot(x, line, color=c)
+            ax.plot(x, NOI_lines[i])
+
+        #ax.set_ylim(2, max(NOI_lines[i])+0.5)
+
+    plt.show()
+
+
 

@@ -2,7 +2,10 @@ import data_proc.common_plots as cp
 import numpy as np
 
 
-def tgl_table_for_imax(ndep, just_middle=False):
+def tgl_table_for_imax(ndep, just_middle=False, prefix=""):
+    if len(prefix) > 1:
+        if prefix[-1] != "_":
+            prefix += "_"
     interlink_type = "provider_priority"
     interlink_version = 3
     strategy = "simple graphs"
@@ -22,7 +25,7 @@ def tgl_table_for_imax(ndep, just_middle=False):
         for space in spaces:
             values = {}
             for model in models:
-                lvs, curves_as_p = cp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy)
+                lvs, curves_as_p = cp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, add_to_title=prefix)
                 p_means = np.round(np.mean(curves_as_p), 2)
                 p_std = np.round(np.std(curves_as_p), 2)
                 values[model] = ("{} ({})".format(p_means, p_std))
@@ -56,4 +59,4 @@ def tgl_longtable():
     print("}")
 
 
-tgl_table_for_imax(10)
+
