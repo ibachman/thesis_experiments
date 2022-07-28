@@ -60,6 +60,7 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
     ###
     samp_copy = samp.copy()
     use_increasing_sample = True
+    remove_only_existing_nodes = False
     ###
 
     if nodes_to_attack is None:
@@ -73,14 +74,13 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
                 # print("({}) -- {}".format(i, datetime.datetime.now()))
 
                 if use_increasing_sample:
-                    node = (random.sample(samp, 1))[0]
-                    #print(node)
-                    list_of_nodes_to_attack.append(node)
-                    #if i == 1:
-                    #    print(len(samp))
-                    #    print(len(list_of_nodes_to_attack))
-                    #print(len(samp))
-                    samp.remove(node)
+                    if len(samp) > 0:
+                        node = (random.sample(samp, 1))[0]
+                        #print(node)
+                        list_of_nodes_to_attack.append(node)
+                        samp.remove(node)
+                    else:
+                        last_was_total_destruction = True
                 else:
                     list_of_nodes_to_attack = random.sample(samp, i)
 
@@ -89,37 +89,53 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
                     NOI = 2
                     GL_per_iteration = [0.0, 0.0]
                 elif use_increasing_sample and i > 1:
-                    logic_nodes_deleted, network_state, NOI, GL_per_iteration = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
+                    logic_nodes_deleted, network_state, NOI, GL_per_iteration, phys_nodes_delete = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
                                                                            physical_network, phys_suppliers, inter_roseta_phys,
                                                                            inter_roseta_logic, list_of_nodes_to_attack, physical_roseta,
                                                                            logical_roseta, logic_network, logic_suppliers, interlink_graph,
                                                                            inner_inter_roseta, use_previous_state=True, previous_state=last_network_state)
                     last_network_state = network_state
+
+                    if remove_only_existing_nodes:
+                        print("REMOVING ONLY EXISTING NODES")
+                        removed_phys = []
+                        for node_lost in phys_nodes_delete:
+                            removed_phys.append(physical_network.vs[node_lost]['name'])
+                        remove_from_samp = [x for x in removed_phys if x in samp]
+                        for n in remove_from_samp:
+                            samp.remove(n)
+
                 else:
-                    logic_nodes_deleted, network_state, NOI, GL_per_iteration = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
+                    logic_nodes_deleted, network_state, NOI, GL_per_iteration, phys_nodes_delete = attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_index,
                                                                 physical_network, phys_suppliers, inter_roseta_phys,
                                                                 inter_roseta_logic, list_of_nodes_to_attack, physical_roseta,
                                                                 logical_roseta, logic_network, logic_suppliers, interlink_graph,
                                                                 inner_inter_roseta)
                     last_network_state = network_state
+
+                    if remove_only_existing_nodes:
+                        print("REMOVING ONLY EXISTING NODES")
+                        removed_phys = []
+                        for node_lost in phys_nodes_delete:
+                            removed_phys.append(physical_network.vs[node_lost]['name'])
+                        remove_from_samp = [x for x in removed_phys if x in samp]
+
+                        for n in remove_from_samp:
+                            samp.remove(n)
+                        
                 if len(logic_nodes_deleted) == n_logic and not last_was_total_destruction and use_increasing_sample:
-                    #print("-1-- GL = 0 at  {}".format(i))
+
                     last_was_total_destruction = True
 
                 is_find_removed = False
                 if find != None:
                     is_find_removed = logical_roseta[find] in logic_nodes_deleted
+
                 iteration_results[(i - 1)].append(numpy.round((n_logic - len(logic_nodes_deleted)) / n_logic, 4))
                 NOI_iteration_results[(i - 1)].append(NOI)
 
                 GL_per_iteration_str = "[{}]".format(list_to_str_with_semmi_colon(GL_per_iteration))
                 GL_per_iteration_results[(i - 1)].append(GL_per_iteration_str)
-
-                #net = network_with_deleted_nodes(logic_network, logic_nodes_deleted)
-                #functional_nodes = [a for a in net.vs if net.degree(a.index) > 0]
-                #functional_nodes_in_AS_net = len(functional_nodes)
-                #print((functional_nodes_in_AS_net * 1.0) / (n_logic * 1.0))
-                #print("*** {}".format(functional_nodes))
 
         print("Ended at {}".format(datetime.datetime.now()))
         print("Starting to write results -- {} -- [[{}]]".format(process_name, datetime.datetime.now()))
@@ -128,7 +144,7 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
         iteration_results_str = []
         NOI_iteration_results_str = []
         GL_per_iteration_results_str = []
-        #list_to_str_with_semmi_colon(list_to_convert)
+
         for i in range(iteration_range - 1):
             current_list_iteration_result_list = iteration_results[i]
             iteration_results_str.append(list_to_str_with_semmi_colon(current_list_iteration_result_list))
@@ -162,6 +178,12 @@ def single_network_attack_new(interdependent_network, network_to_attack, file_na
             is_find_removed = logical_roseta[find] in logic_nodes_deleted
         gl = (n_logic - len(logic_nodes_deleted)) / n_logic
         return gl, is_find_removed
+
+
+def get_name_from_index(index, roseta_dict):
+    for key in roseta_dict.keys():
+        if index == roseta_dict[key]:
+            return key
 
 
 def list_to_str_with_semmi_colon(list_to_convert):
@@ -903,7 +925,7 @@ def attack_nodes_test(phys_name_by_index, logic_name_by_index, intern_name_by_in
 
     #print("G_L: {}, NOI: {} \ndet: {}".format(1-len(logic_nodes_to_delete)/300.0, number_of_iterations, GL_per_iteration))
 
-    return logic_nodes_to_delete, current_state, number_of_iterations, GL_per_iteration
+    return logic_nodes_to_delete, current_state, number_of_iterations, GL_per_iteration, phys_nodes_to_delete
 
 
 def get_physical_nodes_lost_by_cc(physical_graph, phys_input, providers, phys_roseta):
