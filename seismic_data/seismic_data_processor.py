@@ -213,13 +213,13 @@ def my_init():
         print(k)
         print(dip[k])
 
+def test():
 
-a = load_from_csv('seismic_data.csv')
+    a = load_from_csv('seismic_data.csv')
 
-print(len(a.keys()))
-ssum = 0
 
-for k in a.keys():
-    ssum += len(a[k])
+    ssum = 0
 
-print(ssum)
+    for k in a.keys():
+        ssum += len(a[k])
+
