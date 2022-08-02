@@ -44,7 +44,8 @@ def worker_run(worker_queue):
                      interlink_type=task['interlink_type'],
                      interlink_version=task['interlink_version'],
                      capped_random=task['capped_random'],
-                     logical_directed_network=task['logical_directed_network'])
+                     logical_directed_network=task['logical_directed_network'],
+                     fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -116,6 +117,7 @@ def parse_task_args(line):
     task['strategy'] = args.strategy
     task['make_edges'] = args.makeedges
     task['logical_directed_network'] = args.logical_directed_network
+    task['fix_bridge_nodes_interlinks'] = args.fix_bridge_nodes_interlinks
     capped_random = args.capped_random
     if len(capped_random) > 0:
         task['capped_random'] = "cap{}".format(capped_random)
@@ -226,7 +228,8 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          interlink_type=task['interlink_type'],
                          interlink_version=task['interlink_version'],
                          capped_random=task['capped_random'],
-                         logical_directed_network=task['logical_directed_network'])
+                         logical_directed_network=task['logical_directed_network'],
+                         fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
@@ -318,6 +321,9 @@ parser.add_argument('-intv', '--interlink_version', type=int, help='type of inte
 parser.add_argument('-crand', '--capped_random', type=str, help='type of interlink used', default="")
 
 parser.add_argument('-ld', '--logical_directed_network', type=str, help='use a directed graph for the logical network', default="")
+
+parser.add_argument('-fix', '--fix_bridge_nodes_interlinks',  action='store_true', help='use a directed graph for the logical network', default="")
+
 
 
 if __name__ == "__main__":

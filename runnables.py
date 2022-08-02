@@ -9,10 +9,10 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None, capped_random="",
-             interlink_version=1, logical_directed_network=""):
+             interlink_version=1, logical_directed_network="", fix_bridge_nodes_interlinks=False):
 
     #########################
-    fix_bridge_nodes_interlinks = False
+    #fix_bridge_nodes_interlinks = False
     #########################
     title_mod = ""
     #########################
@@ -105,6 +105,11 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             sub_dir = strategy
 
         if attack_phys:
+            ##############################
+            complete_results = True
+            seq_results = True
+            ##############################
+
             # key = (ppv,ndep, lv)
             fix_interlink_dict = {
 
@@ -233,6 +238,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
                 (3, 10, 10): []
 
             }
+
             print("{} -- physical test attack {}".format(process_name, datetime.datetime.now()))
 
             # attack only physical network
@@ -254,12 +260,20 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             if debug:
                 print("OK DEBUG")
                 physical_attack_title = "debug_{}".format(physical_attack_title)
+
+            ##############################
+            if complete_results:
+                physical_attack_title = "comp_it{}_{}".format(iter_number, physical_attack_title)
+            if seq_results:
+                physical_attack_title = "seq_{}".format(physical_attack_title)
+            ##############################
+
             if len(title_mod) > 0:
                 physical_attack_title = "d{}_{}".format(title_mod, physical_attack_title)
             ################################################################
             if fix_bridge_nodes_interlinks:
                 lv = int((logic_file_name.replace("logic_exp_2.5_v", "")).replace(".csv", ""))
-                print(" KEY: {}".format((interlink_version, n_inter, lv)))
+                print(" KEY (interlink_version, n_inter, lv): {}".format((interlink_version, n_inter, lv)))
                 interlinks_to_add = fix_interlink_dict[(interlink_version, n_inter, lv)]
                 interlinks = network_system.get_interlinks()
                 og_number_of_interlinks = len(interlinks.get_edgelist())
@@ -279,14 +293,7 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
             ################################################################
 
             path = os.path.dirname(os.path.abspath(__file__))
-            ##############################
-            complete_results = True
-            seq_results = True
-            if complete_results:
-                physical_attack_title = "comp_it{}_{}".format(iter_number, physical_attack_title)
-            if seq_results:
-                physical_attack_title = "seq_{}".format(physical_attack_title)
-            ##############################
+
             if len(capped_random) > 0 and strategy == "random":
                 path = os.path.join(path, "test_results", sub_dir, "physical_random_attacks", capped_random, physical_attack_title)
             else:
