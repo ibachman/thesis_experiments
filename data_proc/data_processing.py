@@ -1826,6 +1826,79 @@ def get_gl_at_pc(line_dict):
     return values_at_pc
 
 
+def get_curves_as_points(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=False, add_to_title=""):
+
+    if len(add_to_title) > 0:
+        print("using: \"{}\"".format(add_to_title))
+
+    # get all data (10 lines)
+    all_data = run_data()
+    attack = all_data["attack"]
+    exp = all_data["exp"]
+    versions = all_data["versions"]
+    interlink_type_name = all_data["interlink_types"][interlink_type]
+    data_paths = {strategy: all_data["results_paths"]["RA"][strategy]}
+    space_name = all_data["file_space_names"][space]
+    if legacy:
+        file_name_1 = "legacy_result_{}_exp_{}_ndep_{}_att_physical_v".format(space_name, exp, ndep)
+        file_name_2 = "_m_{}.csv".format(physical_model)
+    else:
+        file_name_1 = "{}result_{}v{}_lv{}_{}_exp_{}_ndep_{}_att_physical_v".format(add_to_title, interlink_type_name, interlink_version, logic_net_version, space_name, exp, ndep)
+        file_name_2 = "_m_{}.csv".format(physical_model)
+    file_name = file_name_1 + "{}" + file_name_2
+    if m_results:
+        file_name = "m_{}".format(file_name)
+    data = get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
+
+    lvs = []
+    curves_as_p = []
+
+    for v in versions:
+        this_data = data[strategy][v]
+        curve_as_area = sum(this_data)
+        curves_as_p.append(curve_as_area)
+        lvs.append(logic_net_version)
+
+    return lvs, curves_as_p
+
+
+def get_u_q_sets(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix="", m_results=False):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
+    models = ['RNG', 'GG', 'GPA', '5NN', 'YAO', 'ER']
+    spaces = [(20, 500), (100, 100)]
+    x_axis = list(range(1, 11))
+    max_y = 0
+
+    u_q_set_dict = {}
+
+    for lv in range(1, 11):
+        u_q_set_dict["lv{}".format(lv)] = {}
+        for model in models:
+            u_q_set_dict["lv{}".format(lv)][model] = {}
+            for space in spaces:
+                current_line = []
+                for ndep in x_axis:
+
+                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
+                    p_means = numpy.mean(curves_as_p)
+                    if p_means > max_y:
+                        max_y = int(p_means)
+
+                    current_line.append(p_means)
+
+                u_q = set()
+                for i in range(len(current_line)):
+                    if i > 0:
+                        if current_line[i] < current_line[i - 1]:
+                            u_q.add(i + 1)
+                            continue
+
+                u_q_set_dict["lv{}".format(lv)][model][space] = list(u_q)
+    return u_q_set_dict
+
+
 def get_gl_at_pc_using_NOI(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1, close_to_max_noi=0.0):
     damage, NOI_lines, GL_per_iteration_lines = get_NOI_data(physical_model, space, ndep, version, number_of_iterations, strategy="simple graphs", lv=1)
     line_dict = get_all_iterartions_as_lines(physical_model, space, ndep, version, number_of_iterations, strategy=strategy, lv=lv)

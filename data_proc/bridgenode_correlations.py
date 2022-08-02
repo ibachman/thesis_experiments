@@ -32,6 +32,8 @@ def make_correlation_table(correlation_dict):
         print(line_1)
         print(line_2)
     print("\\end{tabular}")
+    print("\\caption[Pearson's correlation between $TDC$ and $\overline{TG}_L$]{Pearson's correlation between $TDC$ and $\overline{TG}_L$ for each model $m$, space $s$, and logic network version $q$.}")
+    print("\\label{tab:bn_correlations}")
     print("\\end{table}")
 
 
@@ -69,7 +71,7 @@ def get_data_for_correlation_table(prefix=""):
                     interlinks_per_node = dp.get_interlinks_for_logic_nodes(interlinks_path)
                     bridge_nodes_data = dp.find_bridge_nodes(logic_network_path, providers_path)
                     bn_coefficient = bridge_node_interlink_coefficient(bridge_nodes_data, interlinks_per_node)
-                    lvs, curves_as_p = cp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=False, add_to_title=prefix)
+                    lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=False, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     bn_list.append(bn_coefficient)
                     p_means_list.append(p_means)

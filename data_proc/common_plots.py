@@ -510,7 +510,9 @@ def show_average_for_logic_version(logic_net_version, interlink_type, interlink_
     if m_results:
         file_name = "m_{}".format(file_name)
 
-    file_name = "{}_{}".format(prefix, file_name)
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            file_name = "{}_{}".format(prefix, file_name)
 
     data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
     lines = {}
@@ -563,39 +565,11 @@ def show_averages_for_all_imax(logic_net_version, interlink_type, interlink_vers
     plot.n_line_plot(all_lines, x_axis, "".format(physical_model, space_name, logic_net_version), ylabel=r'$\overline{G}_L$', c_list=colors, savefig_to=save_path, auto_close=autoclose)
 
 
-def get_curves_as_points(logic_net_version, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=False, add_to_title=""):
-    # get all data (10 lines)
-    all_data = dp.run_data()
-    attack = all_data["attack"]
-    exp = all_data["exp"]
-    versions = all_data["versions"]
-    interlink_type_name = all_data["interlink_types"][interlink_type]
-    data_paths = {strategy: all_data["results_paths"]["RA"][strategy]}
-    space_name = all_data["file_space_names"][space]
-    if legacy:
-        file_name_1 = "legacy_result_{}_exp_{}_ndep_{}_att_physical_v".format(space_name, exp, ndep)
-        file_name_2 = "_m_{}.csv".format(physical_model)
-    else:
-        file_name_1 = "{}result_{}v{}_lv{}_{}_exp_{}_ndep_{}_att_physical_v".format(add_to_title, interlink_type_name, interlink_version, logic_net_version, space_name, exp, ndep)
-        file_name_2 = "_m_{}.csv".format(physical_model)
-    file_name = file_name_1 + "{}" + file_name_2
-    if m_results:
-        file_name = "m_{}".format(file_name)
-    data = dp.get_all_data_for("", space_name, 2.5, ndep, attack, physical_model, data_paths, recv_file_name=file_name)
+def show_curves_as_bar_and_error_by_model_double_plot(interlink_type, interlink_version, ndep, strategy, m_results=False, save_fig=True, prefix=""):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
 
-    lvs = []
-    curves_as_p = []
-
-    for v in versions:
-        this_data = data[strategy][v]
-        curve_as_area = sum(this_data)
-        curves_as_p.append(curve_as_area)
-        lvs.append(logic_net_version)
-
-    return lvs, curves_as_p
-
-
-def show_curves_as_bar_and_error_by_model_double_plot(interlink_type, interlink_version, ndep, strategy, m_results=False, save_fig=True):
     models = ['GG', 'GPA', 'RNG', '5NN', 'YAO', 'ER']
     all_versions = list(range(1, 11))
     x_axis = [all_versions, all_versions]
@@ -614,7 +588,7 @@ def show_curves_as_bar_and_error_by_model_double_plot(interlink_type, interlink_
             yerr_for_current_model = []
             for lv in all_versions:
 
-                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                 p_means = np.mean(curves_as_p)
                 p_std = np.std(curves_as_p)
                 values_for_current_model.append(p_means)
@@ -652,7 +626,7 @@ def show_curves_as_bar_and_error_by_model(interlink_type, interlink_version, spa
         yerr_for_current_model = []
         for lv in all_versions:
 
-            lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results)
+            lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results)
             p_means = np.mean(curves_as_p)
             p_std = np.std(curves_as_p)
             values_for_current_model.append(p_means)
@@ -664,6 +638,66 @@ def show_curves_as_bar_and_error_by_model(interlink_type, interlink_version, spa
     # pt.plot_bar(possible_degrees, bars_shown_per_degree, values_shown, bar_names, y_label, x_label, title)
     title = "{}, ndep {}".format(space, ndep)
     plot.plot_bar(x_axis, bars_shown, values, legend, "TG_L", "lv", title, yerr_list=yerr_list)
+
+
+def make_u_q_table_for_all_logic_versions_and_spaces(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=""):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
+
+    models = ['RNG', 'GG', 'GPA', '5NN', 'YAO', 'ER']
+    spaces = [(20, 500), (100, 100)]
+
+    u_q_set_dict = dp.get_u_q_sets(interlink_type=interlink_type, interlink_version=interlink_version, strategy=strategy, prefix=prefix, m_results=False)
+    space_names = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
+    print("\\begin{table}[h]")
+    print("\\centering")
+    #print("\\small")
+    print("\\tabcolsep = 0.11cm")
+    print("\\begin{tabular}{|c|l|l|l|l|l|l|l|}")
+    print("\\hline")
+    #####3
+    first_line = "$q$                 & space  {} \\\\ \\hline"
+    content = ""
+    for model in models:
+        content += "& {} ".format(model)
+    first_line.format(content)
+    print(first_line)
+    for lv in range(1, 11):
+        line_1_start = "\\multirow{2}{*}{" + str(lv) + "}  & (1:25) "
+        line_1_end = "   \\\\ \\cline{2-8} "
+        line_2_start = "                    & (1:1)  "
+        line_2_end = "   \\\\ \\hline"
+        for space in spaces:
+            content = ""
+            for model in models:
+                uq_str = ""
+                current_uq = u_q_set_dict["lv{}".format(lv)][model][space]
+                current_uq.sort()
+                for u in current_uq:
+                    uq_str += "{},".format(u)
+                if len(uq_str) == 0:
+                    uq_str = "\\phi"
+                elif uq_str[-1] == ",":
+                    uq_str = uq_str[0:-1]
+                content += "& \\{" + uq_str + "\\}"
+            if space == (20, 500):
+                line_1 = line_1_start + content + line_1_end
+                print(line_1)
+            else:
+                line_2 = line_2_start + content + line_2_end
+                print(line_2)
+
+
+    #####
+    print("\\end{tabular}")
+    print("\\caption[Sets $U_{(q,m,s)}$]{Sets $U_{(q,m,s)}$ for each logical network version $q$, physical model $m$, and space shape $s$.}")
+    print("\\label{tab:u_qm_imax}")
+    print("\\end{table}")
+
+
+def make_u_q_table_comparison_after_adding_interlinks(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=""):
+    pass
 
 
 def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, space, strategy, m_results=False, check_u_q=False, save_fig=True, strategies_comp=None, name_mod="",
@@ -692,7 +726,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=res_type, add_to_title=prefix)
+                    lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=res_type, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -783,7 +817,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
+                    lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -804,7 +838,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 for ndep in x_axis:
                     mod_title = "d{}_".format(name_mod)
                     mod_title += prefix
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=mod_title)
+                    lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=mod_title)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -825,7 +859,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                 current_error = []
                 for ndep in x_axis:
 
-                    lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
+                    lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                     p_means = np.mean(curves_as_p)
                     if p_means > max_y:
                         max_y = int(p_means)
@@ -855,7 +889,11 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
                          use_titles=use_title, err_c=error_colors)
 
 
-def show_curves_as_points_by_space(interlink_type, interlink_version, physical_model, strategy, ndep, m_results=False, strategy_2=None, space=None, save_fig=True):
+def show_curves_as_points_by_space(interlink_type, interlink_version, physical_model, strategy, ndep, m_results=False, strategy_2=None, space=None, save_fig=True, prefix=""):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
+
     all_data = dp.run_data()
 
     size = 10
@@ -891,7 +929,7 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
             st_col += [legend_dict[st] for e in range(10)]
 
             for physical_model in physical_models:
-                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, st)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, st, add_to_title=prefix)
                 if min_val > min(curves_as_p):
                     min_val = min(curves_as_p)
                 if max_val < max(curves_as_p):
@@ -1008,7 +1046,7 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
             space_col += [space_name[space] for e in range(10)]
             for lv in all_versions:
 
-                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=m_results)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, physical_model, ndep, space, strategy, legacy=False, m_results=m_results, add_to_title=prefix)
                 if min_val > min(curves_as_p):
                     min_val = min(curves_as_p)
                 if max_val < max(curves_as_p):
@@ -1164,7 +1202,7 @@ def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False, legacy=
             for st in strategies:
                 print("s: {}, m: {}, st: {}".format(s, m, st))
                 cost_list = []
-                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
                 min_p = min(curves_as_p)
                 max_p = max(curves_as_p)
                 if min_p < low_lim:
@@ -1265,12 +1303,12 @@ def show_delta_tgl_vs_cost(space, ndep=3, save_figure=False, legacy=False, model
         for m in models:
             point_1 = (0, 0)
             point_2 = (0, 0)
-            lvs, curves_as_p_base = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, "simple graphs", legacy=legacy)
+            lvs, curves_as_p_base = dp.get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, "simple graphs", legacy=legacy)
             print(curves_as_p_base)
             for st in strategies:
                 print("s: {}, m: {}, st: {}".format(s, m, st))
                 cost_list = []
-                lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
 
                 z = np.ones(len(curves_as_p))
                 delta_curves_as_p = []
@@ -1363,7 +1401,7 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False, 
         space_col += [space_name[space] for e in range(10)]
         for st in strategies:
 
-            lvs, curves_as_p = get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, st, legacy=legacy)
+            lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, st, legacy=legacy)
             if min_val > min(curves_as_p):
                 min_val = min(curves_as_p)
             if max_val < max(curves_as_p):

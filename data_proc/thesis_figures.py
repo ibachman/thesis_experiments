@@ -31,31 +31,39 @@ def pre_process_seismic_scatter_data(model, ndep=3, strategy=["distance_aux", "l
             pt.write_stuff(g, st, use_model=[model], ndep=ndep, is_seismic=True)
 
 
-def get_lines_cap3(save_figure=True):
+def get_lines_cap3(save_figure=True, prefix="", lvs=range(1, 11), spaces=[(20, 500), (100, 100)]):
     strategy = "simple graphs"
     interlink_type = "provider_priority"
 
-    for logic_net_version in range(1, 11):
+    for logic_net_version in lvs:
+        print(logic_net_version)
+        for space in spaces:
+            print(space)
+            for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
+                cp.show_averages_for_all_imax(logic_net_version, interlink_type, ppv, model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None, prefix=prefix)
+
+
+def get_boxplots_cap_3(save_figure=True, ndeps=list(range(1, 11)), prefix=""):
+    for ndep in ndeps:
+        print(ndep)
         for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
-            for space in [(20, 500), (100, 100)]:
-                cp.show_averages_for_all_imax(logic_net_version, interlink_type, ppv, model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=None)
+            cp.show_curves_as_points_by_space("provider_priority", ppv, model, "simple graphs", ndep, m_results=False, save_fig=save_figure, prefix=prefix)
 
 
-def get_bars_cap_3(save_figure=True):
+def generate_tgl_table_cap3(imax, prefix=""):
+    gtglt.tgl_table_for_imax(imax, prefix=prefix)
+
+
+def get_bars_cap_3(save_figure=True, prefix=""):
     for imax in range(1, 11):
-        cp.show_curves_as_bar_and_error_by_model_double_plot("provider_priority", ppv, imax, "simple graphs", m_results=False, save_fig=save_figure)
+        cp.show_curves_as_bar_and_error_by_model_double_plot("provider_priority", ppv, imax, "simple graphs", m_results=False, save_fig=save_figure, prefix=prefix)
 
 
-def get_imax_lines_cap_3(save_figure=True, check_u_q=False):
+def get_imax_lines_cap_3(save_figure=True, check_u_q=False, prefix=""):
     for lv in range(1, 11):
-        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=save_figure, check_u_q=check_u_q)
+        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=save_figure, check_u_q=check_u_q, prefix=prefix)
 
-
-def get_boxplots_cap_3(save_figure=True, ndeps=list(range(1, 11))):
-    for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
-        for ndep in ndeps:
-            cp.show_curves_as_points_by_space("provider_priority", ppv, model, "simple graphs", ndep, m_results=False, save_fig=save_figure)
-
+#get_imax_lines_cap_3(save_figure=False, check_u_q=False, prefix="seq_comp_it100")
 
 def get_detailed_iteration_analisys_cap_3(save_figure=True, ndeps=list(range(1, 11))):
     for space in [(20, 500), (100, 100)]:
@@ -64,14 +72,8 @@ def get_detailed_iteration_analisys_cap_3(save_figure=True, ndeps=list(range(1, 
                 cp.stacked_plot_and_avg_gl_line(model, space, ndep, version=4, number_of_iterations=100, wigle=0.05, autoclose=False, save_fig=False)
 
 
-def generate_tgl_table_cap3(imax, prefix=""):
-    gtglt.tgl_table_for_imax(imax, prefix=prefix)
-
-
-def get_tgl_table_after_adding_interlinks_cap4(save_figure=False, prefix=""):
-    for lv in range(1, 11):
-        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=True, write_table=True,
-                                               prefix=prefix, show=False)
+def generate_u_q_table_cap3(prefix=""):
+    cp.make_u_q_table_for_all_logic_versions_and_spaces(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=prefix)
 
 
 def get_correlations_table_cap4(prefix=""):
@@ -80,6 +82,12 @@ def get_correlations_table_cap4(prefix=""):
 
 def get_table_4p4_cap4():
     bnc.table_imax_apparition(bnc.list_dict)
+
+
+def get_tgl_table_after_adding_interlinks_cap4(save_figure=False, prefix=""):
+    for lv in range(1, 11):
+        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=True, write_table=True,
+                                               prefix=prefix, show=False)
 
 
 def get_imax_lines_cap_4(save_figure=True, check_u_q=False):
@@ -676,5 +684,5 @@ def get_delta_gl_vs_cost_cap5(save_fig=True):
             cp.show_delta_tgl_vs_cost(space, ndep=ndep, models=["GPA", "YAO", "ER"], img_ver=2, save_figure=save_fig)
 
 # con esto puedo armar tablas de U_q
-# cp.show_imaxes_as_lines_with_error_tgl(1, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=False, check_u_q=True, write_table=False, prefix="", show=False)
-
+#cp.show_imaxes_as_lines_with_error_tgl(1, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=False, check_u_q=True, write_table=False, prefix="", show=False)
+#generate_u_q_table_cap3()

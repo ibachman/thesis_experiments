@@ -302,7 +302,7 @@ def get_partial_data():
         print("Range for q={}: ({},{})".format(lv, np.round(all_bridge_node_ranges["min"], 3), np.round(all_bridge_node_ranges["max"], 3)))
 
 
-def make_table_with_buckets():
+def make_table_with_buckets(all_nodes_list):
     p_buck = [[0, 0], [1, 2], [3, 4], [5, 14], [15, 29], [30, 59], [60, 89], [90, 119], [120, 149], [150, 179], [180, 209], [210, 239], [240, 269], [270, 299]]
 
     hist, prov_h = histogram_for_bridge_nodes(all_nodes_list, p_buck)

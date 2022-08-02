@@ -538,6 +538,7 @@ def km_to_coordinates_chile(kms):
     factor = coordinate / km  # "coordinate" per km
     return kms * factor
 
+
 def parse_interlink_network(interlinks_graph, phys_name_by_index, logic_name_by_index):
     name_by_index = []
     roseta_phys = {}
