@@ -697,7 +697,66 @@ def make_u_q_table_for_all_logic_versions_and_spaces(interlink_type="provider_pr
 
 
 def make_u_q_table_comparison_after_adding_interlinks(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=""):
-    pass
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
+
+    models = ['RNG', 'GG', 'GPA', '5NN', 'YAO', 'ER']
+    space = (20, 500)
+
+    og_u_q_set_dict = dp.get_u_q_sets(interlink_type=interlink_type, interlink_version=interlink_version, strategy=strategy, prefix=prefix, m_results=False)
+    m_u_q_set_dict = dp.get_u_q_sets(interlink_type=interlink_type, interlink_version=interlink_version, strategy=strategy, prefix=prefix, m_results=True)
+
+    print("\\begin{table}[h]")
+    print("\\centering")
+    #print("\\small")
+    print("\\tabcolsep = 0.11cm")
+    print("\\begin{tabular}{|c|l|l|l|l|l|l|l|}")
+    print("\\hline")
+    #####3
+    first_line = "$q$                 & space  {} \\\\ \\hline"
+    content = ""
+    for model in models:
+        content += "& {} ".format(model)
+    first_line.format(content)
+    print(first_line)
+    for lv in range(1, 11):
+        line_1_start = "\\multirow{2}{*}{" + str(lv) + "}  & $\\times$ "
+        line_1_end = "   \\\\ \\cline{2-8} "
+        line_2_start = "                    & $\\checkmark$  "
+        line_2_end = "   \\\\ \\hline"
+
+        for m_result in [False, True]:
+            if m_result:
+                u_q_set_dict = m_u_q_set_dict
+            else:
+                u_q_set_dict = og_u_q_set_dict
+            content = ""
+            for model in models:
+                uq_str = ""
+                current_uq = u_q_set_dict["lv{}".format(lv)][model][space]
+                current_uq.sort()
+                for u in current_uq:
+                    uq_str += "{},".format(u)
+                if len(uq_str) == 0:
+                    uq_str = "\\phi"
+                elif uq_str[-1] == ",":
+                    uq_str = uq_str[0:-1]
+                content += "& \\{" + uq_str + "\\}"
+            if not m_result:
+                line_1 = line_1_start + content + line_1_end
+                print(line_1)
+            else:
+                line_2 = line_2_start + content + line_2_end
+                print(line_2)
+
+
+    #####
+    print("\\end{tabular}")
+    print("\\caption[Sets $U_{(q,m,s)}$ after adding extra interlinks]{Sets $U_{(q,m,\\text{(1:25)})}$ for each logical network version $q$, physical model $m$, and space shape $s=\\text{(1:25)}$. "
+          "Column $+I$ shows whether the interdependent network has extra interlinks added to bridge nodes in $B_{h}^{(q,u)}$ or not.}")
+    print("\\label{tab:u_qm_imax_mres}")
+    print("\\end{table}")
 
 
 def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, space, strategy, m_results=False, check_u_q=False, save_fig=True, strategies_comp=None, name_mod="",
@@ -778,7 +837,7 @@ def show_imaxes_as_lines_with_error_tgl(lv, interlink_type, interlink_version, s
             print("\\begin{tabular}{|c|l|l|l|l|l|l|l|}")
             print("\\hline")
             print("\\multicolumn{8}{|c|}{$q = " + str(lv) + "$}                            \\\\ \\hline")
-            print("$I_{max}$ & $+I$ & RNG & GG & GPA & 5NN & Yao & ER \\\\ \\hline")
+            print("$I_{max}$ & $+I$ & RNG & GG & GPA & 5NN & YAO & ER \\\\ \\hline")
             for imax in range(0, 10):
                 line_2 = "\\multirow{2}{*}{" + str(imax+1) + "}  & $\\times$ "
                 line_1 = "                    & $\\checkmark$ "
@@ -1154,7 +1213,11 @@ def show_curves_as_points_by_space(interlink_type, interlink_version, physical_m
     plt.show()
 
 
-def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False, legacy=True, models=[], img_ver=""):
+def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False, legacy=True, models=[], img_ver="", prefix=""):
+    if len(prefix) > 0:
+        if prefix[-1] != "_":
+            prefix += "_"
+
     low_lim = 10000000
     high_lim = -1
     if legacy:
@@ -1202,7 +1265,7 @@ def show_legacy_tgl_vs_max_link_length(space, ndep=3, save_figure=False, legacy=
             for st in strategies:
                 print("s: {}, m: {}, st: {}".format(s, m, st))
                 cost_list = []
-                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy)
+                lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_v, m, ndep, s, st, legacy=legacy, add_to_title=prefix)
                 min_p = min(curves_as_p)
                 max_p = max(curves_as_p)
                 if min_p < low_lim:
@@ -1364,7 +1427,7 @@ def show_delta_tgl_vs_cost(space, ndep=3, save_figure=False, legacy=False, model
     plt.show()
 
 
-def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False, legacy=True):
+def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False, legacy=True, prefix=""):
     spaces = [(20, 500), (100, 100)]
     space_name = {(20, 500): "(1:25)", (100, 100): "(1:1)"}
 
@@ -1401,7 +1464,7 @@ def show_legacy_tgl_boxplot(model, ndep=3, mod_random=False, save_figure=False, 
         space_col += [space_name[space] for e in range(10)]
         for st in strategies:
 
-            lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, st, legacy=legacy)
+            lvs, curves_as_p = dp.get_curves_as_points(lv, interlink_type, interlink_version, model, ndep, space, st, legacy=legacy, add_to_title=prefix)
             if min_val > min(curves_as_p):
                 min_val = min(curves_as_p)
             if max_val < max(curves_as_p):
@@ -1560,7 +1623,7 @@ def load_edges_as_list(edges_path):
     return edge_list
 
 
-def get_averages_for_gl_line(lv, space, model, ndep, strategy="simple graphs", ppv=3, debug=False):
+def get_averages_for_gl_line(lv, space, model, ndep, strategy="simple graphs", ppv=3, debug=False, prefix=""):
     all_data = dp.run_data()
     # Base data
     data_paths = all_data["results_paths"]
@@ -1572,6 +1635,8 @@ def get_averages_for_gl_line(lv, space, model, ndep, strategy="simple graphs", p
     path = data_paths["RA"][strategy]
     for version in versions:
         file_name = "result_ppv{}_lv{}_{}_exp_{}_ndep_{}_att_physical_v{}_m_{}.csv".format(ppv, lv, geometry, exp, ndep, version, model)
+        if len(prefix) > 0:
+            file_name = "{}_{}".format(prefix, file_name)
         with open(os.path.join(path, file_name)) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             line_count = 1
@@ -1599,7 +1664,7 @@ def get_averages_for_gl_line(lv, space, model, ndep, strategy="simple graphs", p
     return x_axis, y_axis
 
 
-def gl_compare_strategies(lv, space, model, imax, debug=False, save_fig=True):
+def gl_compare_strategies(lv, space, model, imax, debug=False, save_fig=True, prefix=""):
     model_colors_1 = {"RNG": {"light": '#7aa711', "dark": '#006837', "st": '#556a4d'},
                     "GG": {"light": '#ec7014', "dark": '#cc4c02', "st": '#695442'},
                     "5NN": {"light": '#dd3497', "dark": '#ae017e', "st": '#824a81'},

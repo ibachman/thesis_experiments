@@ -319,3 +319,41 @@ def make_table_with_buckets(all_nodes_list):
     print("\\end{tabular}")
     print("\\end{table}")
 
+
+def table_with_bn_gl_value_ranges_for_all_imax():
+
+    print("\\begin{table}[]")
+    print("\\centering")
+    print("\\begin{tabular}{|l|l|}")
+    print("\\hline")
+    print("$q$ & $G_L$ range   \\\\ \\hline")
+    for lv in range(1, 11):
+        line = "{}   &".format(lv) + " {} \\\\ \\hline"
+
+        all_min = []
+        all_max = []
+        for ndep in range(1, 11):
+
+            # en general los bridge nodes no solo sacan a sus vecinos pero sacan menos o más. PERO y el número de clusters?
+            # en cualquier caso si tiene que ver con el tema de ser hubs, pero hasta qué punto?
+
+            bn_data = get_bridge_node_data_using_previous_results(ndep=ndep, lv=lv)
+            # make a GL range
+            min_gl = 10
+            max_gl = 0
+            for key in bn_data.keys():
+                current_gl = np.round(1 - (bn_data[key]['nodes_lost'] / 300), 3)
+                if current_gl < min_gl:
+                    min_gl = current_gl
+                if current_gl > max_gl:
+                    max_gl = current_gl
+            all_min.append(np.round(min_gl, 2))
+            all_max.append(max_gl)
+        range_gl = (min(all_min), max(all_max))
+        print(line.format(range_gl))
+    print("\\end{tabular}")
+    print("\\caption[Bridge nodes $G_L$ range for each $q$]{Bridge nodes $G_L$ values ranges for each logical network version $q$. The $G_L$ ranges were obtained considering $I_{max}\\in\\{1,\\dots,"
+          "10\\}$.}")
+    print("\\label{tab:bridge_nodes_gl_range_by_q}")
+    print("\\end{table}")
+

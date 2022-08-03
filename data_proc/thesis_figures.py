@@ -8,6 +8,7 @@ import data_proc.data_processing as dp
 import data_proc.logic_network_analysis as lna
 import data_proc.bridgenode_correlations as bnc
 import data_proc.generate_tgl_table as gtglt
+import data_proc.get_average_cost as cost
 import numpy as np
 #import common_plots as cp
 #import plotting as pt
@@ -63,7 +64,6 @@ def get_imax_lines_cap_3(save_figure=True, check_u_q=False, prefix=""):
     for lv in range(1, 11):
         cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=False, save_fig=save_figure, check_u_q=check_u_q, prefix=prefix)
 
-#get_imax_lines_cap_3(save_figure=False, check_u_q=False, prefix="seq_comp_it100")
 
 def get_detailed_iteration_analisys_cap_3(save_figure=True, ndeps=list(range(1, 11))):
     for space in [(20, 500), (100, 100)]:
@@ -76,12 +76,13 @@ def generate_u_q_table_cap3(prefix=""):
     cp.make_u_q_table_for_all_logic_versions_and_spaces(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=prefix)
 
 
+def get_bridge_node_analysis_cap_4(save_figure=True):
+    lna.plot_bridge_nodes_danziger_rev(mode="degree_damage", save_figure=save_figure)
+    lna.plot_bridge_nodes_danziger_rev(mode="delta", save_figure=save_figure)
+
+
 def get_correlations_table_cap4(prefix=""):
     bnc.make_correlation_table(bnc.get_data_for_correlation_table(prefix=prefix))
-
-
-def get_table_4p4_cap4():
-    bnc.table_imax_apparition(bnc.list_dict)
 
 
 def get_tgl_table_after_adding_interlinks_cap4(save_figure=False, prefix=""):
@@ -90,62 +91,76 @@ def get_tgl_table_after_adding_interlinks_cap4(save_figure=False, prefix=""):
                                                prefix=prefix, show=False)
 
 
-def get_imax_lines_cap_4(save_figure=True, check_u_q=False):
+def get_table_4p4_cap4(prefix=""):
+    use_list = bnc.list_dict
+    if prefix == "seq_comp_it100":
+        use_list = bnc.list_dict_2
+    bnc.table_imax_apparition(use_list)
+
+
+def get_table_4p5_cap4(prefix=""):
+    cp.make_u_q_table_comparison_after_adding_interlinks(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix=prefix)
+
+
+def get_imax_lines_cap_4(save_figure=True, check_u_q=False, prefix=""):
     for lv in range(1, 11):
-        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=check_u_q)
+        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "simple graphs", m_results=[False, True], save_fig=save_figure, check_u_q=check_u_q, prefix=prefix)
 
 
-def get_bridge_node_analysis_cap_4(save_figure=True):
-    lna.plot_bridge_nodes_danziger_rev(mode="degree_damage", save_figure=save_figure)
-    lna.plot_bridge_nodes_danziger_rev(mode="delta", save_figure=save_figure)
+def get_table_5p1():
+    lna.table_with_bn_gl_value_ranges_for_all_imax()
 
 
-def get_boxplots_cap_5(save_figure=True):
-    for sp in [(20, 500), (100, 100)]:
-        for imax in [3, 5, 7, 10]:
-            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="distance_aux", space=sp, save_fig=save_figure)
-            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="local_hubs", space=sp, save_fig=save_figure)
-            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="degree_aux", space=sp, save_fig=save_figure)
-            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="random", space=sp, save_fig=save_figure)
-
-
-def get_curves_cap_5(save_figure=True, debug=False, lv=1):
+def get_curves_cap_5(save_figure=True, debug=False, lv=1, prefix=""):
+    # CREO QUE NO SE USA // USAR v2
     for imax in [3, 5, 7, 10]:
         for sp in [(20, 500), (100, 100)]:
             for model in ["RNG", "GPA", "GG", "5NN", "YAO", "ER"]:
-                cp.gl_compare_strategies(lv, sp, model, imax, debug=debug, save_fig=save_figure)
+                cp.gl_compare_strategies(lv, sp, model, imax, debug=debug, save_fig=save_figure, prefix=prefix)
 
 
-def get_double_curves_st_comp_cap5(save_figure=True, lv=1):
-    for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
-        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "", save_fig=save_figure, strategies_comp=model)
-        cp.show_imaxes_as_lines_with_error_tgl(1, "provider_priority", ppv, (20, 500), "", save_fig=save_figure, strategies_comp=model, name_mod='1250')
+def get_curves_cap_5_v2(save_figure=True, debug=False, lv=1, prefix=""):
+    strategies = ["distance_aux", "local_hubs", "degree_aux", "random"]
+    interlink_type = "provider_priority"
+    spaces = [(20, 500), (100, 100)]
 
-   
-def get_double_delta_gl_la_ra_cap6(save_figure=True, lv=1):
-    models = ["RNG", "GPA", "GG", "5NN", "YAO", "ER"]
-    strategy = ["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]
-    for imax in [3]:#, 5, 7, 10]:
-        for st in strategy:
-            vs.plot_la_ra_delta_for_strategy(st, imax, models, is_legacy=False, lv=lv, save_fig=save_figure)
+    for strategy in strategies:
+        for space in spaces:
+            for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
+                cp.show_averages_for_all_imax(lv, interlink_type, ppv, model, space, strategy, m_results=False, save_fig=False, autoclose=False, save_to="", all_imax=[3, 5, 7, 10], prefix=prefix)
 
 
-def get_cap_random_boxplots_cap5(save_fig=True, ndep=3):
+def get_boxplots_cap_5(save_figure=True, prefix=""):
+    for sp in [(20, 500), (100, 100)]:
+        for imax in [3, 5, 7, 10]:
+            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="distance_aux", space=sp, save_fig=save_figure, prefix=prefix)
+            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="local_hubs", space=sp, save_fig=save_figure, prefix=prefix)
+            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="degree_aux", space=sp, save_fig=save_figure, prefix=prefix)
+            cp.show_curves_as_points_by_space("provider_priority", ppv, "", "simple graphs", imax, strategy_2="random", space=sp, save_fig=save_figure, prefix=prefix)
+
+
+def get_cap_random_boxplots_cap5(save_fig=True, ndep=3, prefix=""):
     mr = True
     legacy = False
-    cp.show_legacy_tgl_boxplot("RNG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
-    cp.show_legacy_tgl_boxplot("GG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
-    cp.show_legacy_tgl_boxplot("5NN", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
-    cp.show_legacy_tgl_boxplot("YAO", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
-    cp.show_legacy_tgl_boxplot("GPA", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
-    cp.show_legacy_tgl_boxplot("ER", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy)
+    cp.show_legacy_tgl_boxplot("RNG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
+    cp.show_legacy_tgl_boxplot("GG", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
+    cp.show_legacy_tgl_boxplot("5NN", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
+    cp.show_legacy_tgl_boxplot("YAO", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
+    cp.show_legacy_tgl_boxplot("GPA", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
+    cp.show_legacy_tgl_boxplot("ER", ndep=ndep, mod_random=mr, save_figure=save_fig, legacy=legacy, prefix=prefix)
 
 
-def get_length_correlation_figure_cap5(save_fig=True, ndep=3):
-    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1)
-    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2)
-    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1)
-    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2)
+def get_double_curves_st_comp_cap5(save_figure=True, lv=1, prefix=""):
+    for model in ["RNG", "GG", "5NN", "YAO", "GPA", "ER"]:
+        cp.show_imaxes_as_lines_with_error_tgl(lv, "provider_priority", ppv, (20, 500), "", save_fig=save_figure, strategies_comp=model, prefix=prefix)
+        cp.show_imaxes_as_lines_with_error_tgl(1, "provider_priority", ppv, (20, 500), "", save_fig=save_figure, strategies_comp=model, name_mod='1250', prefix=prefix)
+
+
+def get_length_correlation_figure_cap5(save_fig=True, ndep=3, prefix=""):
+    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1, prefix=prefix)
+    cp.show_legacy_tgl_vs_max_link_length((20, 500), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2, prefix=prefix)
+    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["RNG", "GG", "5NN"], img_ver=1, prefix=prefix)
+    cp.show_legacy_tgl_vs_max_link_length((100, 100), ndep=ndep, save_figure=save_fig, legacy=False, models=["GPA", "YAO", "ER"], img_ver=2, prefix=prefix)
 
 
 def get_table_link_length_original_strategies_cap5():
@@ -198,6 +213,7 @@ def get_table_link_length_original_strategies_cap5():
     print("\\label{}")
     print("\\end{table}")
 
+
 def make_link_length_table_random_modifications_cap5():
 
     models = ["RNG", "GG", "5NN", "GPA", "YAO", "ER"]  #
@@ -249,6 +265,26 @@ def make_link_length_table_random_modifications_cap5():
     print("\\caption{}")
     print("\\label{}")
     print("\\end{table}")
+
+
+def get_table_5p6_cap5(imax, prefix):
+    cost.check_cost_efficiency(imax, debug=False, prefix=prefix)
+
+
+def get_table_5p7_cap5(prefix=""):
+    cost.check_cost_efficiency_distance_plus(add_to_title="1250", prefix=prefix)
+
+
+def get_table_5p9_cap5(prefix=""):
+    cost.check_cost_efficiency_distance_bs(add_to_title="3000", prefix=prefix)
+
+
+def get_double_delta_gl_la_ra_cap6(save_figure=True, lv=1):
+    models = ["RNG", "GPA", "GG", "5NN", "YAO", "ER"]
+    strategy = ["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]
+    for imax in [3]:#, 5, 7, 10]:
+        for st in strategy:
+            vs.plot_la_ra_delta_for_strategy(st, imax, models, is_legacy=False, lv=lv, save_fig=save_figure)
 
 
 def get_scatter_plot_base_cap_6(save_figure=True, imax=3, strategies=["simple graphs", "distance_aux", "local_hubs", "degree_aux", "random"]):

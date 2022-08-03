@@ -1873,6 +1873,9 @@ def get_u_q_sets(interlink_type="provider_priority", interlink_version=3, strate
 
     u_q_set_dict = {}
 
+    if m_results:
+        spaces = [(20, 500)]
+
     for lv in range(1, 11):
         u_q_set_dict["lv{}".format(lv)] = {}
         for model in models:
@@ -1897,6 +1900,22 @@ def get_u_q_sets(interlink_type="provider_priority", interlink_version=3, strate
 
                 u_q_set_dict["lv{}".format(lv)][model][space] = list(u_q)
     return u_q_set_dict
+
+
+def transform_u_q_sets_dict_to_list(interlink_type="provider_priority", interlink_version=3, strategy="simple graphs", prefix="", m_results=False):
+    u_q_set_dict = get_u_q_sets(interlink_type=interlink_type, interlink_version=interlink_version, strategy=strategy, prefix=prefix, m_results=m_results)
+    spaces = [(20, 500), (100, 100)]
+    final_dict = {}
+    models = ['RNG', 'GG', 'GPA', '5NN', 'YAO', 'ER']
+    lvs = range(1, 11)
+    for space in spaces:
+        final_dict[space] = []
+        for lv in lvs:
+            for model in models:
+                current_uq = u_q_set_dict["lv{}".format(lv)][model][space]
+                final_dict[space].append(current_uq)
+    print(final_dict)
+    return final_dict
 
 
 def get_gl_at_pc_using_NOI(physical_model, space, ndep, version, number_of_iterations=100, strategy="simple graphs", lv=1, close_to_max_noi=0.0):

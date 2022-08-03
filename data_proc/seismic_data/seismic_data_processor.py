@@ -216,10 +216,11 @@ def my_init():
 
 a = load_from_csv('seismic_data.csv')
 
-print(len(a.keys()))
-ssum = 0
+def test():
+    print(len(a.keys()))
+    ssum = 0
 
-for k in a.keys():
-    ssum += len(a[k])
+    for k in a.keys():
+        ssum += len(a[k])
 
-print(ssum)
+    print(ssum)
