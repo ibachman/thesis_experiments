@@ -45,7 +45,8 @@ def worker_run(worker_queue):
                      interlink_version=task['interlink_version'],
                      capped_random=task['capped_random'],
                      logical_directed_network=task['logical_directed_network'],
-                     fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"])
+                     fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"],
+                     title_mod=task['title_mod'])
         # avisar que job_done (task["job_id"])
         if task["job_id"] > -1:
             task["server_connection"].set_job_done(task["job_id"])
@@ -118,9 +119,14 @@ def parse_task_args(line):
     task['make_edges'] = args.makeedges
     task['logical_directed_network'] = args.logical_directed_network
     task['fix_bridge_nodes_interlinks'] = args.fix_bridge_nodes_interlinks
+    task['title_mod'] = args.title_mod
+
+    if len(task['title_mod']) > 0:
+        task['strategy'] = "distance_aux"
     capped_random = args.capped_random
     if len(capped_random) > 0:
         task['capped_random'] = "cap{}".format(capped_random)
+        task['strategy'] = "random"
     else:
         task['capped_random'] = ""
     task['localized_attacks_radius'] = args.localizedattacksradius
@@ -229,7 +235,8 @@ def run_command_lines(max_workers, command_lines, from_server=None, parallel=Tru
                          interlink_version=task['interlink_version'],
                          capped_random=task['capped_random'],
                          logical_directed_network=task['logical_directed_network'],
-                         fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"])
+                         fix_bridge_nodes_interlinks=task["fix_bridge_nodes_interlinks"],
+                         title_mod=task['title_mod'])
             # avisar que job_done (task["job_id"])
             if task["job_id"] > -1:
                 task["server_connection"].set_job_done(task["job_id"])
@@ -322,9 +329,9 @@ parser.add_argument('-crand', '--capped_random', type=str, help='type of interli
 
 parser.add_argument('-ld', '--logical_directed_network', type=str, help='use a directed graph for the logical network', default="")
 
-parser.add_argument('-fix', '--fix_bridge_nodes_interlinks',  action='store_true', help='use a directed graph for the logical network', default="")
+parser.add_argument('-fix', '--fix_bridge_nodes_interlinks',  action='store_true', help='add extra interlinks to fix bridge nodes', default=False)
 
-
+parser.add_argument('-tmod', '--title_mod', type=str, help='use 1250 for distance+ and 3000 for RNG + B_s', default="")
 
 if __name__ == "__main__":
     line = " ".join(sys.argv[1::])

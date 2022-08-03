@@ -9,12 +9,12 @@ def run_test(x_coordinate, y_coordinate, exp, n_inter, n_logic_suppliers,
              version, n_logic, n_phys, iter_number, READ_flag=False, attack_types=[], model=[], logic_flag=False,
              physical_flag=False, phys_iteration=0, strategy='', process_name="", localized_attack_data=[],
              seismic_data=[], legacy=False, debug=False, logic_file_name=None, interlink_type=None, capped_random="",
-             interlink_version=1, logical_directed_network="", fix_bridge_nodes_interlinks=False):
+             interlink_version=1, logical_directed_network="", fix_bridge_nodes_interlinks=False, title_mod=""):
 
     #########################
     #fix_bridge_nodes_interlinks = False
     #########################
-    title_mod = ""
+    #title_mod = ""
     #########################
     #capped_random = ""
     #########################
